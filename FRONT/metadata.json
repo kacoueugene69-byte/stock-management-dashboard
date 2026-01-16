@@ -1,0 +1,5 @@
+{
+  "name": "Stock Management Dashboard",
+  "description": "A responsive stock management dashboard application built with React and Tailwind CSS, replicating a provided UI. It includes a login page and a main dashboard view with key statistics, recent sales, and top-selling products.",
+  "requestFramePermissions": []
+}
