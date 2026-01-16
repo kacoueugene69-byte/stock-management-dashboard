@@ -10,8 +10,7 @@ type RegisterPayload = {
   role?: string;
 };
 
-const API_BASE_URL: string =
-  (import.meta as any)?.env?.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL: string = 'http://localhost:5001'; 
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
@@ -21,7 +20,6 @@ export const apiClient = {
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: jsonHeaders,
-      credentials: 'include',
       body: JSON.stringify(userData),
     });
     if (!response.ok) throw new Error(`Erreur: ${response.status}`);
@@ -32,17 +30,7 @@ export const apiClient = {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: jsonHeaders,
-      credentials: 'include',
       body: JSON.stringify(credentials),
-    });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
-  },
-
-  // UTILISATEURS
-  getUsers: async (): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/utilisateurs`, {
-      credentials: 'include',
     });
     if (!response.ok) throw new Error(`Erreur: ${response.status}`);
     return response.json();
@@ -50,17 +38,7 @@ export const apiClient = {
 
   // ARTICLES
   getArticles: async (): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/articles`, {
-      credentials: 'include',
-    });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
-  },
-
-  getArticleById: async (id: number): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/articles/${id}`, {
-      credentials: 'include',
-    });
+    const response = await fetch(`${API_BASE_URL}/api/articles`);
     if (!response.ok) throw new Error(`Erreur: ${response.status}`);
     return response.json();
   },
@@ -69,7 +47,6 @@ export const apiClient = {
     const response = await fetch(`${API_BASE_URL}/api/articles`, {
       method: 'POST',
       headers: jsonHeaders,
-      credentials: 'include',
       body: JSON.stringify(articleData),
     });
     if (!response.ok) throw new Error(`Erreur: ${response.status}`);
@@ -80,7 +57,6 @@ export const apiClient = {
     const response = await fetch(`${API_BASE_URL}/api/articles/${id}`, {
       method: 'PUT',
       headers: jsonHeaders,
-      credentials: 'include',
       body: JSON.stringify(articleData),
     });
     if (!response.ok) throw new Error(`Erreur: ${response.status}`);
@@ -89,48 +65,19 @@ export const apiClient = {
 
   deleteArticle: async (id: number): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/api/articles/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
+      method: 'DELETE'
     });
     if (!response.ok) throw new Error(`Erreur: ${response.status}`);
     return response.json();
   },
 
-  // CATÉGORIES
   getCategories: async (): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/categories`, {
-      credentials: 'include',
-    });
+    const response = await fetch(`${API_BASE_URL}/api/categories`);
     if (!response.ok) throw new Error(`Erreur: ${response.status}`);
     return response.json();
-  },
-
-  createCategory: async (categoryData: any): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/categories`, {
-      method: 'POST',
-      headers: jsonHeaders,
-      credentials: 'include',
-      body: JSON.stringify(categoryData),
-    });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
-  },
-
-  // STATS
-  getStats: async (): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/stats`, {
-      credentials: 'include',
-    });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
-  },
-
-  // HEALTH CHECK
-  checkHealth: async (): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/health`);
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
-  },
+  }
 };
 
+// LA LIGNE CI-DESSOUS CORRIGE L'ERREUR DANS LA CONSOLE
+export const ApiService = apiClient; 
 export default apiClient;
