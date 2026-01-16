@@ -140,7 +140,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
         <div className="mt-6 p-4 bg-blue-50 rounded text-sm text-gray-600">
           <p className="font-semibold mb-2">📝 Identifiants de test :</p>
           <p>Username: <code className="bg-white px-2 py-1 rounded">styve_admin</code></p>
-          <p>Password: <code className="bg-white px-2 py-1 rounded">password123</code></p>
+          <p>Password: <code className="bg-white px-2 py-1 rounded">password1235678</code></p>
         </div>
       </div>
     </div>
