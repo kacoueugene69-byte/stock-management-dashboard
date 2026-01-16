@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -34,22 +33,49 @@ export type Notification = {
   linkTo: string;
 };
 
-const userAvatarSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="lightgray" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>`;
-const userAvatarDataUrl = `data:image/svg+xml;base64,${btoa(userAvatarSvg)}`;
-
 const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const [activePage, setActivePage] = useState('Dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [stats, setStats] = useState({
+    totalSalesCount: 0,
+    totalRevenue: 0,
+    totalCost: 0,
+    totalProfit: 0
+  });
 
   // Mock current user
   const currentUser = {
     name: 'Super Admin',
     role: 'Superadministrateur',
-    photoUrl: userAvatarDataUrl
+    photoUrl: '/api/placeholder/40/40' // URL d'image par défaut
   };
+
+  // Fetch stats from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Exemple d'appel API
+        // const response = await fetch('/api/stats');
+        // const data = await response.json();
+        // setStats(data);
+        
+        // Mock data pour l'instant
+        setStats({
+          totalSalesCount: 42,
+          totalRevenue: 125000,
+          totalCost: 75000,
+          totalProfit: 50000
+        });
+      } catch (error) {
+        console.error('Erreur lors du chargement des statistiques:', error);
+      }
+    };
+    
+    fetchStats();
+  }, []);
 
   const handlePageChange = (page: string) => {
     if (page !== activePage) {
@@ -79,14 +105,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     setIsLogoutModalOpen(true);
   };
 
-
-  // Calculate statistics
-  const totalSalesCount = 0;
-  const totalRevenue = 0;
-  const totalCost = 0;
-  const totalProfit = 0;
-
-
   const renderContent = () => {
     switch (activePage) {
       case 'Dashboard':
@@ -95,7 +113,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               <StatCard 
                 title="Ventes" 
-                value={totalSalesCount.toString()} 
+                value={stats.totalSalesCount.toString()} 
                 change={0} 
                 changeText="Depuis hier" 
                 iconBgColor="bg-green-100"
@@ -104,7 +122,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
               />
               <StatCard 
                 title="Revenu" 
-                value={`${totalRevenue.toLocaleString('fr-FR')} F`} 
+                value={`${stats.totalRevenue.toLocaleString('fr-FR')} F`} 
                 change={0} 
                 changeText="Depuis hier" 
                 iconBgColor="bg-yellow-100"
@@ -112,7 +130,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
                 icon={<FactureIcon />}
               />
               <StatCard 
-                title="Commande" 
+                title="Commandes" 
                 value="0" 
                 change={0} 
                 changeText="Depuis hier"
@@ -122,7 +140,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
               />
               <StatCard 
                 title="Profit" 
-                value={`${totalProfit.toLocaleString('fr-FR')} F`}
+                value={`${stats.totalProfit.toLocaleString('fr-FR')} F`}
                 change={0} 
                 changeText="Depuis hier" 
                 iconBgColor="bg-pink-100"
@@ -150,15 +168,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       case 'Utilisateur': return <UserPage />;
       case 'Configuration': return <ConfigurationPage />;
       default:
-        return <div>Page "{activePage}" non trouvée.</div>;
+        return <div className="p-8 text-center text-gray-500">Page "{activePage}" non trouvée.</div>;
     }
   };
-
 
   return (
     <div className="flex h-screen bg-gray-50">
       {isLoading && <LoadingSpinner />}
-      <Sidebar onLogout={handleRequestLogout} activePage={activePage} onPageChange={handlePageChange} isCollapsed={isSidebarCollapsed} />
+      <Sidebar 
+        onLogout={handleRequestLogout} 
+        activePage={activePage} 
+        onPageChange={handlePageChange} 
+        isCollapsed={isSidebarCollapsed} 
+      />
       <div className="flex flex-col flex-1 min-w-0">
         <Header 
           pageTitle={activePage} 
@@ -170,7 +192,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
           onNotificationClick={handleNotificationClick}
           onMarkAllAsRead={handleMarkAllAsRead}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 overflow-auto">
           {renderContent()}
         </main>
       </div>
