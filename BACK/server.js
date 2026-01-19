@@ -10,22 +10,24 @@ const port = process.env.PORT || 5000;
 
 // Configuration de la base de données
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'gstock_db',
-  password: process.env.DB_PASSWORD || 'admin',
-  port: process.env.DB_PORT || 5432,
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Test de connexion
+pool.on('error', (err) => {
+  console.error('❌ Erreur de connexion à la BD:', err);
+});
+
+pool.on('connect', () => {
+  console.log('✅ Connexion à PostgreSQL établie');
+});
 
 // ==================== MIDDLEWARE ====================
 
-// CORS Configuration - IMPORTANT pour communiquer avec le front
+// CORS Configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173', 'https://faci-cdcom.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -76,6 +78,7 @@ app.post('/api/auth/login', async (req, res) => {
       res.status(401).json({ error: "Identifiants invalides ou compte inactif" });
     }
   } catch (err) {
+    console.error('❌ Login error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -93,6 +96,7 @@ app.get('/api/articles', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
+    console.error('❌ GET /api/articles error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -120,7 +124,7 @@ app.post('/api/articles', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("ERREUR SQL POST:", err.message);
+    console.error('❌ POST /api/articles error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -132,19 +136,21 @@ app.get('/api/categories', async (req, res) => {
     const result = await pool.query('SELECT * FROM categories ORDER BY nom_categorie');
     res.json(result.rows);
   } catch (err) {
+    console.error('❌ GET /api/categories error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/magasins', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nom_magasin FROM magasins WHERE statut = "actif"');
+    // CORRIGÉ : Utiliser des guillemets simples pour les valeurs SQL
+    const result = await pool.query("SELECT id, nom_magasin FROM magasins WHERE statut = 'actif'");
     res.json(result.rows);
   } catch (err) {
+    console.error('❌ GET /api/magasins error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ==================== STATS ====================
 
@@ -170,7 +176,7 @@ app.get('/api/stats', async (req, res) => {
       pendingOrders: Number(pending.rows[0].pending_orders || 0),
     });
   } catch (err) {
-    console.error('❌ GET /api/stats error:', err);
+    console.error('❌ GET /api/stats error:', err.message);
     res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
   }
 });
@@ -198,10 +204,12 @@ app.listen(port, () => {
   📊 Health check:  http://localhost:${port}/api/health
   
   📝 Endpoints disponibles:
-    POST   http://localhost:${port}/api/auth/register
     POST   http://localhost:${port}/api/auth/login
-    GET    http://localhost:${port}/api/utilisateurs
     GET    http://localhost:${port}/api/articles
     GET    http://localhost:${port}/api/categories
+    GET    http://localhost:${port}/api/magasins
+    GET    http://localhost:${port}/api/stats
   `);
 });
+
+module.exports = app;
