@@ -10,7 +10,7 @@ type RegisterPayload = {
   role?: string;
 };
 
-const API_BASE_URL: string = 'http://localhost:5001'; 
+const API_BASE_URL: string = 'http://localhost:5000'; 
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 

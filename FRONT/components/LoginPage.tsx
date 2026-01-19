@@ -52,7 +52,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
           <button onClick={onSwitchToRegister} className="font-medium text-blue-600 hover:text-blue-500">
             S'inscrire
           </button>
-        </p>
+        </p>  
       </div>
     </div>
   );
