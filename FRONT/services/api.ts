@@ -10,7 +10,8 @@ type RegisterPayload = {
   role?: string;
 };
 
-const API_BASE_URL: string = 'http://localhost:5000'; 
+// Utilise VITE_API_URL si défini (en prod sur Vercel), sinon backend déployé par défaut.
+const API_BASE_URL: string = (import.meta as any).env?.VITE_API_URL || 'https://gstock-backend.onrender.com'; 
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 

@@ -25,9 +25,13 @@ pool.on('connect', () => {
 
 // ==================== MIDDLEWARE ====================
 
-// CORS Configuration
+// CORS Configuration - AJOUTEZ votre URL Vercel
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173', 'https://faci-cdcom.vercel.app'],
+  origin: [
+    'http://localhost:3000', 
+    'http://localhost:5173', 
+    'https://gestion-stock-faci-cdcom.vercel.app'  // ⬅️ Votre URL Vercel
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
