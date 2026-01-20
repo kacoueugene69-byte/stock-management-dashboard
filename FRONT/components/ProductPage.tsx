@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import TableActions from './TableActions';
 import { useNotification } from '../hooks/useNotification';
-import { ProductIcon } from './icons';
 import { Article } from '../types';
-import { ApiService } from '../services/api';
+import apiClient from '../services/api';
+
 
 const ProductPage: React.FC = () => {
     const [products, setProducts] = useState<Article[]>([]);
@@ -13,25 +13,37 @@ const ProductPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [currentProduct, setCurrentProduct] = useState<Partial<Article> | null>(null);
+    const [currentProduct, setCurrentProduct] = useState<Article | null>(null);
     const [productToDelete, setProductToDelete] = useState<Article | null>(null);
     const { showNotification } = useNotification();
-    
-    const [formState, setFormState] = useState<Partial<Article>>({});
 
-    // Chargement initial
+    const initialFormState: Partial<Article> = useMemo(() => ({
+        code_article: '',
+        nom_article: '',
+        quantite_stock: 0,
+        seuil_alerte: 5,
+        statut: 'actif',
+        type_conditionnement: 'unité',
+        prix_achat: 0,
+        prix_vente: 0,
+        poids: 0,
+        id_categorie: undefined
+    }), []);
+
+    const [formState, setFormState] = useState<Partial<Article>>(initialFormState);
+
     useEffect(() => {
         const loadData = async () => {
             try {
                 setIsLoading(true);
                 const [articlesData, categoriesData] = await Promise.all([
-                    ApiService.getArticles(),
-                    ApiService.getCategories()
+                    apiClient.getArticles(),
+                    apiClient.getCategories()
                 ]);
                 setProducts(articlesData);
                 setCategories(categoriesData);
             } catch (error) {
-                showNotification("Erreur de connexion à la base de données", "error");
+                showNotification("Erreur de connexion", "error");
             } finally {
                 setIsLoading(false);
             }
@@ -39,69 +51,22 @@ const ProductPage: React.FC = () => {
         loadData();
     }, [showNotification]);
 
-    // Initialisation du formulaire
     useEffect(() => {
-        if (currentProduct) {
-            setFormState(currentProduct);
-        } else {
-            setFormState({ 
-                code_article: `PROD-${Date.now().toString().slice(-6)}`,
-                nom_article: '',
-                quantite_stock: 0, 
-                seuil_alerte: 5, 
-                statut: 'actif', 
-                type_conditionnement: 'sac',
-                prix_achat: 0,
-                prix_vente: 0,
-                poids: 0, // Ajout du poids initial
-                id_categorie: undefined
+        if (isModalOpen) {
+            // Correction ici : on s'assure que l'ID est conservé si on modifie
+            setFormState(currentProduct ? { ...currentProduct } : {
+                ...initialFormState,
+                code_article: `PROD-${Math.floor(100000 + Math.random() * 900000)}`
             });
         }
-    }, [currentProduct, isModalOpen]);
+    }, [currentProduct, isModalOpen, initialFormState]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
         setFormState(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'number' ? (value === '' ? 0 : parseFloat(value)) : value
         }));
-    };
-
-    const handleOpenAddModal = () => {
-        setCurrentProduct(null);
-        setIsModalOpen(true);
-    };
-
-    const handleOpenEditModal = (product: Article) => {
-        setCurrentProduct(product);
-        setIsModalOpen(true);
-    };
-
-    const handleOpenDeleteModal = (product: Article) => {
-        setProductToDelete(product);
-        setIsDeleteModalOpen(true);
-    };
-
-    const handleCloseModals = () => {
-        setIsModalOpen(false);
-        setIsDeleteModalOpen(false);
-        setCurrentProduct(null);
-        setProductToDelete(null);
-    };
-
-    const handleDeleteConfirm = async () => {
-        if (!productToDelete?.id) return;
-        try {
-            setIsLoading(true);
-            await ApiService.deleteArticle(productToDelete.id);
-            setProducts(products.filter(p => p.id !== productToDelete.id));
-            showNotification('Produit supprimé', 'success');
-            handleCloseModals();
-        } catch (err) {
-            showNotification("Erreur lors de la suppression", "error");
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -109,128 +74,169 @@ const ProductPage: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const productData = {
+            // Conversion explicite pour PostgreSQL (DECIMAL)
+            const payload = {
                 ...formState,
-                prix_achat: parseFloat(String(formState.prix_achat || 0)),
-                prix_vente: parseFloat(String(formState.prix_vente || 0)),
-                poids: parseFloat(String(formState.poids || 0)), // Conversion du poids
-                quantite_stock: parseInt(String(formState.quantite_stock || 0)),
-                id_categorie: formState.id_categorie ? parseInt(String(formState.id_categorie)) : null,
-                seuil_alerte: parseInt(String(formState.seuil_alerte || 5))
+                prix_achat: Number(formState.prix_achat) || 0,
+                prix_vente: Number(formState.prix_vente) || 0,
+                poids: Number(formState.poids) || 0,
+                id_categorie: formState.id_categorie ? Number(formState.id_categorie) : null,
             };
 
+            // Correction de l'erreur 404 : on utilise l'ID de l'article sélectionné
             if (currentProduct?.id) {
-                const updated = await ApiService.updateArticle(currentProduct.id, productData);
+                const updated = await apiClient.updateArticle(currentProduct.id, payload as Article);
                 setProducts(products.map(p => p.id === updated.id ? updated : p));
                 showNotification('Mis à jour !', 'success');
             } else {
-                const created = await ApiService.createArticle(productData);
+                const created = await apiClient.createArticle(payload as Article);
                 setProducts([created, ...products]);
-                showNotification('Enregistré !', 'success');
+                showNotification('Créé !', 'success');
             }
-            handleCloseModals();
+            setIsModalOpen(false);
         } catch (err) {
-            showNotification("Échec de l'enregistrement", "error");
+            showNotification("Erreur d'enregistrement", "error");
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleConfirmDelete = async () => {
+        if (!productToDelete?.id) return;
+        setIsLoading(true);
+        try {
+            await apiClient.deleteArticle(productToDelete.id);
+            setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+            showNotification('Supprimé !', 'success');
+        } catch (err) {
+            showNotification("Erreur de suppression", "error");
+        } finally {
+            setIsDeleteModalOpen(false);
+            setProductToDelete(null);
+            setIsLoading(false);
+        }
+    };
+
     return (
-        <div className="p-4">
-            {/* Header omitted for brevity */}
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-xl font-semibold text-gray-800">Gestion des Produits</h1>
-                <button onClick={handleOpenAddModal} className="px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-md hover:bg-blue-800">
+        <div className="p-2 sm:p-4">
+            <div className="flex justify-between mb-6">
+                <h1 className="text-xl font-semibold">Gestion des Produits</h1>
+                <button onClick={() => { setCurrentProduct(null); setIsModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-md">
                     Ajouter un produit
                 </button>
             </div>
 
             <div className="bg-white rounded-xl shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50">
-                            <tr className="border-b border-gray-200 text-xs uppercase text-gray-500">
-                                <th className="py-3 px-4">Article</th>
-                                <th className="py-3 px-4">Code</th>
-                                <th className="py-3 px-4 text-center">Poids</th>
-                                <th className="py-3 px-4 text-right">P. Vente</th>
-                                <th className="py-3 px-4 text-center">Stock</th>
-                                <th className="py-3 px-4 text-center">Actions</th>
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50 border-b">
+                        <tr className="text-xs uppercase text-gray-500 font-bold">
+                            <th className="py-4 px-4">Article</th>
+                            <th className="py-4 px-4">Code</th>
+                            <th className="py-4 px-4 text-center">Poids</th>
+                            <th className="py-4 px-4 text-right">P. Vente</th>
+                            <th className="py-4 px-4 text-center">Stock</th>
+                            <th className="py-4 px-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                        {products.map(product => (
+                            <tr key={product.id} className="hover:bg-gray-50">
+                                <td className="py-3 px-4">{product.nom_article}</td>
+                                <td className="py-3 px-4 text-gray-500 font-mono">{product.code_article}</td>
+                                <td className="py-3 px-4 text-center">{product.poids} kg</td>
+                                <td className="py-3 px-4 text-right font-bold text-blue-700">{Number(product.prix_vente).toLocaleString()} F</td>
+                                <td className="py-3 px-4 text-center">{product.quantite_stock}</td>
+                                <td className="py-3 px-4 text-center">
+                                    <TableActions 
+                                        onEdit={() => { setCurrentProduct(product); setIsModalOpen(true); }} 
+                                        onDelete={() => { setProductToDelete(product); setIsDeleteModalOpen(true); }} 
+                                    />
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {products.map(product => (
-                                <tr key={product.id} className="hover:bg-gray-50">
-                                    <td className="py-3 px-4 font-medium text-gray-900">{product.nom_article}</td>
-                                    <td className="py-3 px-4 text-xs font-mono text-gray-500">{product.code_article}</td>
-                                    <td className="py-3 px-4 text-center text-gray-600">{product.poids} kg</td>
-                                    <td className="py-3 px-4 text-right text-blue-700 font-bold">{product.prix_vente?.toLocaleString()} F</td>
-                                    <td className="py-3 px-4 text-center font-semibold">{product.quantite_stock}</td>
-                                    <td className="py-3 px-4 text-center">
-                                        <TableActions onEdit={() => handleOpenEditModal(product)} onDelete={() => handleOpenDeleteModal(product)} />
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={handleCloseModals} title={currentProduct ? "Modifier" : "Ajouter"}>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentProduct ? "Modifier l'article" : "Ajouter"}>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Nom de l'article</label>
-                            <input type="text" name="nom_article" value={formState.nom_article || ''} onChange={handleChange} required className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
-                        </div>
-                        
-                        {/* CATEGORIES SELECTION */}
+                    <div>
+                        <label className="block text-sm font-medium">Code article</label>
+                        <input type="text" name="code_article" value={formState.code_article || ''} onChange={handleChange} readOnly className="w-full border rounded-md p-2 mt-1 bg-gray-100" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Nom de l'article</label>
+                        <input type="text" name="nom_article" value={formState.nom_article || ''} onChange={handleChange} required className="w-full border rounded-md p-2 mt-1" />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Catégorie</label>
-                            <select 
-                                name="id_categorie" 
-                                value={formState.id_categorie || ''} 
-                                onChange={handleChange} 
-                                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="">Choisir une catégorie...</option>
-                                {categories.map(cat => (
-                                    <option key={cat.id} value={cat.id}>
-                                        {cat.nom_categorie}
-                                    </option>
-                                ))}
+                            <label className="block text-sm font-medium">Catégorie</label>
+                            <select name="id_categorie" value={formState.id_categorie || ''} onChange={handleChange} className="w-full border rounded-md p-2 mt-1">
+                                <option value="">Choisir...</option>
+                                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.nom_categorie}</option>)}
                             </select>
                         </div>
-
-                        {/* POIDS FIELD */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Poids (kg)</label>
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                name="poids" 
-                                value={formState.poids || ''} 
-                                onChange={handleChange} 
-                                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Prix d'achat</label>
-                            <input type="number" name="prix_achat" value={formState.prix_achat || ''} onChange={handleChange} className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Prix de vente</label>
-                            <input type="number" name="prix_vente" value={formState.prix_vente || ''} onChange={handleChange} required className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                            <label className="block text-sm font-medium">Poids (kg)</label>
+                            <input type="number" step="0.01" name="poids" value={formState.poids ?? ''} onChange={handleChange} className="w-full border rounded-md p-2 mt-1" />
                         </div>
                     </div>
-                    <div className="flex justify-end pt-4 space-x-3">
-                        <button type="button" onClick={handleCloseModals} className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Annuler</button>
-                        <button type="submit" className="px-4 py-2 text-sm text-white bg-blue-700 rounded-md hover:bg-blue-800">Enregistrer</button>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium">Prix d'achat</label>
+                            <input type="number" name="prix_achat" value={formState.prix_achat ?? ''} onChange={handleChange} className="w-full border rounded-md p-2 mt-1" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium">Prix de vente</label>
+                            <input type="number" name="prix_vente" value={formState.prix_vente ?? ''} onChange={handleChange} required className="w-full border rounded-md p-2 mt-1" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium">Quantité en stock</label>
+                            <input type="number" name="quantite_stock" value={formState.quantite_stock ?? ''} onChange={handleChange} className="w-full border rounded-md p-2 mt-1" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium">Seuil d'alerte</label>
+                            <input type="number" name="seuil_alerte" value={formState.seuil_alerte ?? ''} onChange={handleChange} className="w-full border rounded-md p-2 mt-1" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium">Statut</label>
+                            <select name="statut" value={formState.statut || 'actif'} onChange={handleChange} className="w-full border rounded-md p-2 mt-1">
+                                <option value="actif">Actif</option>
+                                <option value="inactif">Inactif</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium">Conditionnement</label>
+                            <select name="type_conditionnement" value={formState.type_conditionnement || 'unité'} onChange={handleChange} className="w-full border rounded-md p-2 mt-1">
+                                <option value="unité">Unité</option>
+                                <option value="carton">Carton</option>
+                                <option value="paquet">Paquet</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-md">Annuler</button>
+                        <button type="submit" className="px-4 py-2 bg-blue-700 text-white rounded-md">Enregistrer</button>
                     </div>
                 </form>
             </Modal>
+
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                title="Supprimer l'article"
+                message={`Voulez-vous vraiment supprimer "${productToDelete?.nom_article ?? ''}" ? Cette action est irréversible.`}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => { setIsDeleteModalOpen(false); setProductToDelete(null); }}
+            />
         </div>
     );
 };

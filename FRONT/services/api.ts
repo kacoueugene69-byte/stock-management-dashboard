@@ -1,84 +1,91 @@
-// FRONT/services/api.ts
+// services/api.ts
 
-type Credentials = { nom_utilisateur: string; mot_de_passe: string };
-type RegisterPayload = {
-  nom_utilisateur: string;
+export type RegisterPayload = {
+  nom: string;
+  prenom: string;
   email: string;
   mot_de_passe: string;
-  nom?: string;
-  prenom?: string;
-  role?: string;
+  photo_url?: string;
 };
 
-// Utilise VITE_API_URL si défini (en prod sur Vercel), sinon backend déployé par défaut.
-const API_BASE_URL: string = (import.meta as any).env?.VITE_API_URL || 'https://gstock-backend.onrender.com'; 
+const API_URL = 'https://gstock-backend.onrender.com';
 
-const jsonHeaders = { 'Content-Type': 'application/json' };
-
-export const apiClient = {
-  // AUTHENTIFICATION
-  register: async (userData: RegisterPayload): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+const apiClient = {
+  // Inscription
+  register: async (userData: RegisterPayload) => {
+    const response = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
-      headers: jsonHeaders,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
     });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
+    return data;
   },
 
-  login: async (credentials: Credentials): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  // Connexion
+  login: async (credentials: { email: string; mot_de_passe: string }) => {
+    const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
-      headers: jsonHeaders,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Identifiants incorrects');
+    return data;
+  },
+  
+  // Ajoutez cette ligne pour la compatibilité avec vos autres pages
+  getArticles: async () => { /* ... voir code précédent ... */ },
+
+  // Staff management
+  getStaff: async () => {
+    const response = await fetch(`${API_URL}/api/staff`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Erreur lors du chargement du personnel');
+    return data;
   },
 
-  // ARTICLES
-  getArticles: async (): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/articles`);
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
-  },
-
-  createArticle: async (articleData: any): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/articles`, {
+  createStaff: async (staffData: Partial<StaffMember>) => {
+    const response = await fetch(`${API_URL}/api/staff`, {
       method: 'POST',
-      headers: jsonHeaders,
-      body: JSON.stringify(articleData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(staffData),
     });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de la création du membre');
+    return data;
   },
 
-  updateArticle: async (id: number, articleData: any): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/articles/${id}`, {
+  updateStaff: async (id: number, staffData: Partial<StaffMember>) => {
+    const response = await fetch(`${API_URL}/api/staff/${id}`, {
       method: 'PUT',
-      headers: jsonHeaders,
-      body: JSON.stringify(articleData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(staffData),
     });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de la modification du membre');
+    return data;
   },
 
-  deleteArticle: async (id: number): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/articles/${id}`, {
-      method: 'DELETE'
+  deleteStaff: async (id: number) => {
+    const response = await fetch(`${API_URL}/api/staff/${id}`, {
+      method: 'DELETE',
     });
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de la suppression du membre');
+    return data;
   },
 
-  getCategories: async (): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/categories`);
-    if (!response.ok) throw new Error(`Erreur: ${response.status}`);
-    return response.json();
-  }
+  getMagasins: async () => {
+    const response = await fetch(`${API_URL}/api/magasins`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Erreur lors du chargement des magasins');
+    return data;
+  },
 };
 
-// LA LIGNE CI-DESSOUS CORRIGE L'ERREUR DANS LA CONSOLE
-export const ApiService = apiClient; 
+export const ApiService = apiClient; // Important pour ProductPage.tsx
 export default apiClient;

@@ -36,6 +36,7 @@ export type Notification = {
 const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const [activePage, setActivePage] = useState('Dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -172,21 +173,44 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     }
   };
 
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+    setIsMobileMenuOpen((v) => !v);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {isLoading && <LoadingSpinner />}
+      {/* Desktop sidebar */}
       <Sidebar 
         onLogout={handleRequestLogout} 
         activePage={activePage} 
         onPageChange={handlePageChange} 
         isCollapsed={isSidebarCollapsed} 
       />
+      {/* Mobile drawer sidebar */}
+      {isMobileMenuOpen && (
+        <>
+          <Sidebar
+            onLogout={handleRequestLogout}
+            activePage={activePage}
+            onPageChange={(p) => { handlePageChange(p); setIsMobileMenuOpen(false); }}
+            isCollapsed={false}
+            variant="mobile"
+          />
+          <div
+            className="fixed inset-0 bg-black/40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+        </>
+      )}
       <div className="flex flex-col flex-1 min-w-0">
         <Header 
           pageTitle={activePage} 
           user={currentUser}
           onLogout={handleRequestLogout} 
-          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+          onToggleSidebar={handleToggleSidebar} 
           isSidebarCollapsed={isSidebarCollapsed}
           notifications={notifications}
           onNotificationClick={handleNotificationClick}

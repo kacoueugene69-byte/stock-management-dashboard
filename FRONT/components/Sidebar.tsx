@@ -11,6 +11,7 @@ interface SidebarProps {
   activePage: string;
   onPageChange: (page: string) => void;
   isCollapsed: boolean;
+  variant?: 'desktop' | 'mobile';
 }
 
 interface NavItemProps {
@@ -39,7 +40,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false, onClick,
     );
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onLogout, activePage, onPageChange, isCollapsed }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onLogout, activePage, onPageChange, isCollapsed, variant = 'desktop' }) => {
 
   const navItems = [
     { icon: <DashboardIcon className="w-5 h-5" />, label: "Dashboard" },
@@ -58,8 +59,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, activePage, onPageChange, i
     { icon: <ConfigurationIcon className="w-5 h-5" />, label: "Configuration" },
   ];
 
+  const baseClasses = 'flex flex-col bg-blue-950 text-white transition-all duration-300';
+  const desktopClasses = `${isCollapsed ? 'w-20' : 'w-64'} hidden md:flex`;
+  const mobileClasses = 'md:hidden fixed inset-y-0 left-0 z-50 w-64 shadow-xl';
+
   return (
-    <aside className={`hidden md:flex flex-col bg-blue-950 text-white transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+    <aside className={`${baseClasses} ${variant === 'desktop' ? desktopClasses : mobileClasses}`}>
       <div className={`flex items-center h-20 border-b border-blue-900 flex-shrink-0 ${isCollapsed ? 'justify-center' : 'px-4'}`}>
         <Logo variant="light-on-dark" size={isCollapsed ? 'md' : 'sm'} iconOnly={isCollapsed} />
       </div>
