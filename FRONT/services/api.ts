@@ -5,10 +5,23 @@ export type RegisterPayload = {
   prenom: string;
   email: string;
   mot_de_passe: string;
+  role?: string;
   photo_url?: string;
 };
 
-const API_URL = 'https://gstock-backend.onrender.com';
+export type StaffMember = {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: string;
+  photo_url?: string;
+  id_magasin?: number;
+  magasin_nom?: string;
+};
+
+// Récupération de l'URL depuis les variables d'environnement Vite
+const API_URL: string = (import.meta as any).env.VITE_API_URL ?? 'https://gstock-backend.onrender.com';
 
 const apiClient = {
   // Inscription
@@ -20,7 +33,7 @@ const apiClient = {
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
+    if (!response.ok) throw new Error(data.error || "Erreur lors de l'inscription");
     return data;
   },
 
@@ -36,37 +49,33 @@ const apiClient = {
     if (!response.ok) throw new Error(data.error || 'Identifiants incorrects');
     return data;
   },
-  
-  // Ajoutez cette ligne pour la compatibilité avec vos autres pages
-  getArticles: async () => { /* ... voir code précédent ... */ },
 
   // Staff management
   getStaff: async () => {
     const response = await fetch(`${API_URL}/api/staff`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Erreur lors du chargement du personnel');
-    return data;
+    if (!response.ok) throw new Error('Erreur lors du chargement du personnel');
+    return await response.json();
   },
 
-  createStaff: async (staffData: Partial<StaffMember>) => {
+  createStaff: async (staffData: any) => {
     const response = await fetch(`${API_URL}/api/staff`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(staffData),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Erreur lors de la création du membre');
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de la création');
     return data;
   },
 
-  updateStaff: async (id: number, staffData: Partial<StaffMember>) => {
+  updateStaff: async (id: number, staffData: any) => {
     const response = await fetch(`${API_URL}/api/staff/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(staffData),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Erreur lors de la modification du membre');
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de la modification');
     return data;
   },
 
@@ -74,18 +83,16 @@ const apiClient = {
     const response = await fetch(`${API_URL}/api/staff/${id}`, {
       method: 'DELETE',
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Erreur lors de la suppression du membre');
-    return data;
+    if (!response.ok) throw new Error('Erreur lors de la suppression');
+    return await response.json();
   },
 
   getMagasins: async () => {
     const response = await fetch(`${API_URL}/api/magasins`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Erreur lors du chargement des magasins');
-    return data;
+    if (!response.ok) throw new Error('Erreur lors du chargement des magasins');
+    return await response.json();
   },
 };
 
-export const ApiService = apiClient; // Important pour ProductPage.tsx
+export const ApiService = apiClient;
 export default apiClient;
