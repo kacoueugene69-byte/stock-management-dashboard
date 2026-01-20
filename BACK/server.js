@@ -40,10 +40,10 @@ app.post('/api/auth/register', async (req, res) => {
 
     // 1. Création du profil personnel
     const pRes = await client.query(
-      'INSERT INTO personnel (nom, prenom, photo_url) VALUES ($1, $2, $3) RETURNING identifiant',
-      [nom.trim(), prenom.trim(), photo_url || null]
+      'INSERT INTO personnels (nom, prenom, photo_url, matricule) VALUES ($1, $2, $3, $4) RETURNING id',
+      [nom.trim(), prenom.trim(), photo_url || null, 'MAT' + Date.now()]
     );
-    const personnelId = pRes.rows[0].identifiant;
+    const personnelId = pRes.rows[0].id;
 
     // 2. Création du compte utilisateur
     const uRes = await client.query(
