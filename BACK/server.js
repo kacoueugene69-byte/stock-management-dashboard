@@ -1,11 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { sequelize } = require('./models'); // index.js qui configure Sequelize
+const { sequelize } = require('./models');
 
 const app = express();
 
-// Configuration CORS
+// ============================================
+// CONFIGURATION CORS & JSON
+// ============================================
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -23,8 +25,8 @@ sequelize.authenticate()
 // ============================================
 // IMPORT ROUTES
 // ============================================
+const authRoutes = require('./routes/auth');
 const utilisateursRoutes = require('./routes/utilisateurs');
-app.use('/api/users', utilisateursRoutes);
 const articlesRoutes = require('./routes/articles');
 const clientsRoutes = require('./routes/clients');
 const personnelsRoutes = require('./routes/personnels');
@@ -34,17 +36,15 @@ const facturesRoutes = require('./routes/factures');
 const magasinsRoutes = require('./routes/magasins');
 const categoriesRoutes = require('./routes/categories');
 const mouvementsStockRoutes = require('./routes/mouvementsStock');
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
-
 
 // ============================================
 // UTILISATION DES ROUTES
 // ============================================
+app.use('/api/auth', authRoutes);
+app.use('/api/users', utilisateursRoutes);
 app.use('/api/articles', articlesRoutes);
 app.use('/api/clients', clientsRoutes);
 app.use('/api/staff', personnelsRoutes);
-app.use('/api/users', utilisateursRoutes);
 app.use('/api/ventes', ventesRoutes);
 app.use('/api/commandes', commandesRoutes);
 app.use('/api/factures', facturesRoutes);
