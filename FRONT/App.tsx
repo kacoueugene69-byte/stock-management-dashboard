@@ -5,6 +5,7 @@ import RegistrationPage from './components/RegistrationPage';
 import LoadingSpinner from './components/LoadingSpinner';
 import { NotificationProvider, useNotification } from './hooks/useNotification';
 import NotificationContainer from './components/NotificationContainer';
+import { ApiService } from './services/api';
 
 type View = 'login' | 'register' | 'dashboard';
 
@@ -37,15 +38,24 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = (user: User) => {
+  // Connexion réelle via API
+  const handleLogin = async (credentials: { email: string; mot_de_passe: string }) => {
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const data = await ApiService.login(credentials);
+      const user: User = data.user;
       setCurrentUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
       setView('dashboard');
+      showNotification('Connexion réussie ✅', 'success');
+    } catch (err: any) {
+      showNotification(err.message, 'error');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
+  // Déconnexion
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('user');
@@ -53,9 +63,18 @@ const AppContent: React.FC = () => {
     showNotification('Déconnecté avec succès', 'success');
   };
 
-  const handleRegister = () => {
-    showNotification('Inscription réussie ! Veuillez vous connecter.', 'success');
-    setView('login');
+  // Inscription réelle via API
+  const handleRegister = async (payload: any) => {
+    setIsLoading(true);
+    try {
+      await ApiService.register(payload);
+      showNotification('Inscription réussie ! Veuillez vous connecter.', 'success');
+      setView('login');
+    } catch (err: any) {
+      showNotification(err.message, 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderView = () => {

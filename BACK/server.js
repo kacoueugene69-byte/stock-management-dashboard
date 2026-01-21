@@ -34,6 +34,9 @@ const facturesRoutes = require('./routes/factures');
 const magasinsRoutes = require('./routes/magasins');
 const categoriesRoutes = require('./routes/categories');
 const mouvementsStockRoutes = require('./routes/mouvementsStock');
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
 
 // ============================================
 // UTILISATION DES ROUTES
