@@ -1,5 +1,6 @@
--- Création de la base de données
---CREATE DATABASE gstock_db;
+-- Supprimer et recréer la base si nécessaire
+ -- DROP DATABASE gstock_db;
+ CREATE DATABASE gstock_db;
 
 -- 1. Table des Magasins
 CREATE TABLE IF NOT EXISTS magasins (
@@ -31,13 +32,12 @@ CREATE TABLE IF NOT EXISTS personnels (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Table des Utilisateurs (Comptes de connexion)
+-- 3. Table des Utilisateurs (sans contrainte vers personnels)
 CREATE TABLE IF NOT EXISTS utilisateurs (
     id SERIAL PRIMARY KEY,
-    id_personnel INTEGER REFERENCES personnels(id) ON DELETE CASCADE,
     nom_utilisateur VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    mot_de_passe TEXT NOT NULL, -- Hashé en production
+    mot_de_passe TEXT NOT NULL,
     role VARCHAR(30) NOT NULL CHECK (role IN ('superadmin', 'admin', 'gerant', 'vendeur')),
     statut VARCHAR(20) DEFAULT 'actif',
     derniere_connexion TIMESTAMP WITH TIME ZONE,
@@ -47,12 +47,14 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
 -- 4. Table des Catégories
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
-    nom_categorie VARCHAR(100) NOT NULL,
+    nom_categorie VARCHAR(100) NOT NULL UNIQUE CHECK (
+        nom_categorie IN ('Aliment faci', 'Aliment local', 'Materiel elevage', 'Poussin', 'Produit veterinaire')
+    ),
     description TEXT,
     date_creation DATE DEFAULT CURRENT_DATE
 );
 
--- 5. Table des Articles (Produits)
+-- 5. Table des Articles
 CREATE TABLE IF NOT EXISTS articles (
     id SERIAL PRIMARY KEY,
     code_article VARCHAR(50) UNIQUE NOT NULL,
@@ -62,12 +64,11 @@ CREATE TABLE IF NOT EXISTS articles (
     prix_vente DECIMAL(12, 2) NOT NULL,
     quantite_stock INTEGER DEFAULT 0,
     statut VARCHAR(20) DEFAULT 'actif',
-    poids VARCHAR(20),
-    type_conditionnement VARCHAR(50), -- sac, carton, unité, etc.
     seuil_alerte INTEGER DEFAULT 5,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- 6. Table des Clients
 CREATE TABLE IF NOT EXISTS clients (
@@ -89,16 +90,16 @@ CREATE TABLE IF NOT EXISTS ventes (
     date_vente TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     id_magasin INTEGER REFERENCES magasins(id),
     id_client INTEGER REFERENCES clients(id),
-    nom_client_libre VARCHAR(100), -- Pour les clients non enregistrés
+    nom_client_libre VARCHAR(100),
     montant_total DECIMAL(15, 2) NOT NULL,
     montant_paye DECIMAL(15, 2) DEFAULT 0,
     mode_paiement VARCHAR(30) DEFAULT 'espèces',
-    statut_paiement VARCHAR(20) CHECK (statut_paiement IN ('payé', 'partiel', 'impayé')),
+    statut_paiement VARCHAR(20) CHECK (statut_paiement IN ('payé livrée', 'livrée non payé', 'payé non livrée')),
     nom_vendeur VARCHAR(100),
-    id_utilisateur INTEGER REFERENCES utilisateurs(id)
+    id_utilisateur INTEGER -- champ libre
 );
 
--- 8. Table de détails des Ventes (Articles vendus)
+-- 8. Table de détails des Ventes (articles achetés)
 CREATE TABLE IF NOT EXISTS vente_articles (
     id SERIAL PRIMARY KEY,
     id_vente INTEGER REFERENCES ventes(id) ON DELETE CASCADE,
@@ -112,9 +113,16 @@ CREATE TABLE IF NOT EXISTS vente_articles (
 CREATE TABLE IF NOT EXISTS commandes (
     id SERIAL PRIMARY KEY,
     numero_commande VARCHAR(50) UNIQUE NOT NULL,
+    type_commande VARCHAR(50) NOT NULL CHECK (
+        type_commande IN ('matériels_élevage', 'poussins', 'produits_vétérinaires')
+    ),
+    details_commande TEXT NOT NULL, -- ex: "Croissance chair, Abreuvoir"
+    nom_client VARCHAR(100) NOT NULL,
     id_client INTEGER REFERENCES clients(id),
     date_commande DATE DEFAULT CURRENT_DATE,
-    statut VARCHAR(30) DEFAULT 'en attente' CHECK (statut IN ('en attente', 'preparation', 'livree', 'annulee')),
+    statut VARCHAR(30) DEFAULT 'en attente' CHECK (
+        statut IN ('en attente', 'preparation', 'livrée payée', 'annulée')
+    ),
     montant_total DECIMAL(15, 2) NOT NULL,
     montant_paye DECIMAL(15, 2) DEFAULT 0,
     statut_paiement VARCHAR(20) DEFAULT 'impayé'
@@ -125,6 +133,10 @@ CREATE TABLE IF NOT EXISTS factures (
     id SERIAL PRIMARY KEY,
     numero_facture VARCHAR(50) UNIQUE NOT NULL,
     id_vente INTEGER UNIQUE REFERENCES ventes(id) ON DELETE CASCADE,
+    references_vente TEXT NOT NULL, -- détails de la vente (articles, quantités, etc.)
+    statut_facture VARCHAR(30) NOT NULL CHECK (
+        statut_facture IN ('livrée_non_payée', 'payée_non_livrée', 'payée_livrée')
+    ),
     date_facture TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -137,7 +149,7 @@ CREATE TABLE IF NOT EXISTS mouvements_stock (
     type_mouvement VARCHAR(10) CHECK (type_mouvement IN ('entrée', 'sortie')),
     quantite INTEGER NOT NULL,
     raison TEXT,
-    id_utilisateur INTEGER REFERENCES utilisateurs(id)
+    id_utilisateur INTEGER -- champ libre
 );
 
 -- Index pour optimiser les recherches
