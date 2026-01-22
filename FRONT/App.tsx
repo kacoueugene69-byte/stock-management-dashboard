@@ -11,11 +11,11 @@ type View = 'login' | 'register' | 'dashboard';
 
 interface User {
   id: number;
-  nom_utilisateur: string;
   email: string;
   role: string;
-  nom?: string;
-  prenom?: string;
+  statut?: string;
+  derniere_connexion?: string | null;
+  created_at?: string | null;
 }
 
 const AppContent: React.FC = () => {
@@ -29,10 +29,10 @@ const AppContent: React.FC = () => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       try {
-        const user = JSON.parse(savedUser);
+        const user = JSON.parse(savedUser) as User;
         setCurrentUser(user);
         setView('dashboard');
-      } catch (err) {
+      } catch {
         localStorage.removeItem('user');
       }
     }
@@ -43,13 +43,16 @@ const AppContent: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await ApiService.login(credentials);
-      const user: User = data.user;
+      // L'API peut renvoyer { user } ou directement user
+      const user: User = (data && (data.user ?? data)) as User;
+
       setCurrentUser(user);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('isAuthenticated', 'true');
       setView('dashboard');
       showNotification('Connexion réussie ✅', 'success');
     } catch (err: any) {
-      showNotification(err.message, 'error');
+      showNotification(err?.message || 'Erreur lors de la connexion', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -59,52 +62,45 @@ const AppContent: React.FC = () => {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
     setView('login');
     showNotification('Déconnecté avec succès', 'success');
   };
 
-  // Inscription réelle via API
-  const handleRegister = async (payload: any) => {
-    setIsLoading(true);
-    try {
-      await ApiService.register(payload);
-      showNotification('Inscription réussie ! Veuillez vous connecter.', 'success');
-      setView('login');
-    } catch (err: any) {
-      showNotification(err.message, 'error');
-    } finally {
-      setIsLoading(false);
-    }
+  // Inscription : RegistrationPage appelle déjà ApiService.register et ensuite onRegister()
+  const handleRegister = async () => {
+    showNotification('Inscription réussie ! Veuillez vous connecter.', 'success');
+    setView('login');
   };
 
   const renderView = () => {
     switch (view) {
       case 'login':
         return (
-          <LoginPage 
-            onLogin={handleLogin} 
-            onSwitchToRegister={() => setView('register')} 
+          <LoginPage
+            onLogin={handleLogin}
+            onSwitchToRegister={() => setView('register')}
           />
         );
       case 'register':
         return (
-          <RegistrationPage 
-            onRegister={handleRegister} 
-            onSwitchToLogin={() => setView('login')} 
+          <RegistrationPage
+            onRegister={handleRegister}
+            onSwitchToLogin={() => setView('login')}
           />
         );
       case 'dashboard':
         return (
-          <DashboardPage 
-            user={currentUser} 
-            onLogout={handleLogout} 
+          <DashboardPage
+            user={currentUser}
+            onLogout={handleLogout}
           />
         );
       default:
         return (
-          <LoginPage 
-            onLogin={handleLogin} 
-            onSwitchToRegister={() => setView('register')} 
+          <LoginPage
+            onLogin={handleLogin}
+            onSwitchToRegister={() => setView('register')}
           />
         );
     }

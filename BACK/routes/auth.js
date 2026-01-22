@@ -1,11 +1,16 @@
+// routes/auth.js
 const express = require('express');
 const router = express.Router();
-const { Utilisateur } = require('../models');
+const { Utilisateur } = require('../models'); // assure-toi que models/index.js exporte Utilisateur
 
-// ✅ Route d'inscription (vendeur par défaut)
+// Inscription (email + mot_de_passe uniquement)
 router.post('/register', async (req, res) => {
   try {
-    const { nom, prenom, email, mot_de_passe } = req.body;
+    const { email, mot_de_passe } = req.body;
+
+    if (!email || !mot_de_passe) {
+      return res.status(400).json({ error: "Email et mot de passe obligatoires." });
+    }
 
     const existing = await Utilisateur.findOne({ where: { email } });
     if (existing) {
@@ -13,12 +18,9 @@ router.post('/register', async (req, res) => {
     }
 
     const user = await Utilisateur.create({
-      nom_utilisateur: `${prenom}.${nom}`.toLowerCase(),
-      nom,
-      prenom,
-      email,
+      email: email.trim().toLowerCase(),
       mot_de_passe,
-      role: 'vendeur',   // 👈 rôle par défaut
+      role: 'vendeur',
       statut: 'actif'
     });
 
@@ -28,12 +30,16 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ✅ Route de connexion
+// Connexion
 router.post('/login', async (req, res) => {
   try {
     const { email, mot_de_passe } = req.body;
 
-    const user = await Utilisateur.findOne({ where: { email } });
+    if (!email || !mot_de_passe) {
+      return res.status(400).json({ error: "Email et mot de passe obligatoires." });
+    }
+
+    const user = await Utilisateur.findOne({ where: { email: email.trim().toLowerCase() } });
     if (!user || user.mot_de_passe !== mot_de_passe) {
       return res.status(401).json({ error: "Identifiants incorrects" });
     }
@@ -48,13 +54,17 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ✅ Route spéciale pour créer un superadmin
+// Création du superadmin (protéger avec SUPERADMIN_SECRET dans .env)
 router.post('/create-superadmin', async (req, res) => {
   try {
-    const { nom, prenom, email, mot_de_passe, secret } = req.body;
+    const { email, mot_de_passe, secret } = req.body;
 
     if (secret !== process.env.SUPERADMIN_SECRET) {
       return res.status(403).json({ error: "Accès interdit" });
+    }
+
+    if (!email || !mot_de_passe) {
+      return res.status(400).json({ error: "Email et mot de passe obligatoires." });
     }
 
     const existing = await Utilisateur.findOne({ where: { email } });
@@ -63,12 +73,9 @@ router.post('/create-superadmin', async (req, res) => {
     }
 
     const user = await Utilisateur.create({
-      nom_utilisateur: `${prenom}.${nom}`.toLowerCase(),
-      nom,
-      prenom,
-      email,
+      email: email.trim().toLowerCase(),
       mot_de_passe,
-      role: 'superadmin',   // 👈 rôle spécial
+      role: 'superadmin',
       statut: 'actif'
     });
 
@@ -78,16 +85,14 @@ router.post('/create-superadmin', async (req, res) => {
   }
 });
 
-// ✅ Suppression du superadmin
+// Suppression d'un superadmin (par id)
 router.delete('/delete-superadmin/:id', async (req, res) => {
   try {
     const { id } = req.params;
-
     const user = await Utilisateur.findByPk(id);
     if (!user || user.role !== 'superadmin') {
       return res.status(404).json({ error: "Superadmin introuvable" });
     }
-
     await user.destroy();
     return res.json({ message: "Superadmin supprimé avec succès" });
   } catch (err) {

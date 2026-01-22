@@ -1,17 +1,10 @@
+// models/Utilisateur.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('./database');
+const sequelize = require('./database'); // ton instance Sequelize
 
 const Utilisateur = sequelize.define('Utilisateur', {
-  nom: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  prenom: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   email: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(100),
     unique: true,
     allowNull: false
   },
@@ -19,21 +12,24 @@ const Utilisateur = sequelize.define('Utilisateur', {
     type: DataTypes.TEXT,
     allowNull: false
   },
-
-  // ✅ C'est ici que tu mets le champ "role"
   role: {
     type: DataTypes.ENUM('superadmin', 'admin', 'gerant', 'vendeur'),
     allowNull: false,
     defaultValue: 'vendeur'
   },
-
   statut: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(20),
+    allowNull: false,
     defaultValue: 'actif'
   },
-
   derniere_connexion: {
-    type: DataTypes.DATE
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   }
 }, {
   tableName: 'utilisateurs',

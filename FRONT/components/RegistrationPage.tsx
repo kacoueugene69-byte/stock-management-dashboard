@@ -1,3 +1,4 @@
+// components/RegistrationPage.tsx
 import React, { useState } from 'react';
 import Logo from './Logo';
 import apiClient from '../services/api';
@@ -9,8 +10,6 @@ interface RegistrationPageProps {
 
 const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
     email: '',
     mot_de_passe: '',
     confirmPassword: ''
@@ -26,10 +25,6 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, onSwitc
   };
 
   const validateForm = (): boolean => {
-    if (!formData.nom.trim() || !formData.prenom.trim()) {
-      setError("Le nom et le prénom sont obligatoires");
-      return false;
-    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Format d'email invalide");
@@ -56,25 +51,19 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, onSwitc
     setLoading(true);
     try {
       const userData = {
-        nom: formData.nom.trim(),
-        prenom: formData.prenom.trim(),
         email: formData.email.trim().toLowerCase(),
         mot_de_passe: formData.mot_de_passe
       };
-
-      console.log("📤 Envoi des données:", { ...userData, mot_de_passe: "***" });
 
       await apiClient.register(userData);
 
       setSuccess(true);
       onRegister();
 
-      // Redirection vers login après 2s
       setTimeout(() => {
         onSwitchToLogin();
       }, 2000);
     } catch (err: any) {
-      console.error("❌ Erreur:", err);
       setError(err.message || "Erreur lors de l'inscription. Veuillez réessayer.");
     } finally {
       setLoading(false);
@@ -102,13 +91,6 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, onSwitc
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          <div className="grid grid-cols-2 gap-2">
-            <input name="nom" placeholder="Nom" value={formData.nom} onChange={handleChange} required disabled={loading || success}
-              className="px-3 py-3 border rounded-md focus:ring-2 focus:ring-blue-500" />
-            <input name="prenom" placeholder="Prénom" value={formData.prenom} onChange={handleChange} required disabled={loading || success}
-              className="px-3 py-3 border rounded-md focus:ring-2 focus:ring-blue-500" />
-          </div>
-
           <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required disabled={loading || success}
             className="w-full px-3 py-3 border rounded-md focus:ring-2 focus:ring-blue-500" />
 

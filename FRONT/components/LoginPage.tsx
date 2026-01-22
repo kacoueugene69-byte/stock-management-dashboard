@@ -1,6 +1,7 @@
+// components/LoginPage.tsx
 import React, { useState } from 'react';
 import Logo from './Logo';
-import apiClient from '../services/api'; 
+import apiClient from '../services/api';
 
 interface LoginPageProps {
   onLogin: (user: any) => void;
@@ -26,9 +27,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
     setLoading(true);
 
     try {
-      const response = await apiClient.login({ 
-        email: email.trim().toLowerCase(), 
-        mot_de_passe: motDePasse 
+      const response = await apiClient.login({
+        email: email.trim().toLowerCase(),
+        mot_de_passe: motDePasse
       });
 
       const user = response.user || response;
@@ -39,7 +40,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
 
       onLogin(user);
     } catch (err: any) {
-      if (err.message.includes('incorrect')) {
+      if (err.message && err.message.toLowerCase().includes('incorrect')) {
         setError("Email ou mot de passe incorrect");
       } else {
         setError(err.message || "Erreur lors de la connexion");
@@ -118,8 +119,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Pas encore de compte ?{" "}
-            <button 
-              onClick={onSwitchToRegister} 
+            <button
+              onClick={onSwitchToRegister}
               className="font-bold text-blue-600 hover:underline"
               disabled={loading}
             >

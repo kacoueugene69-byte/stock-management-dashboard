@@ -1,18 +1,12 @@
 // services/api.ts
-
 export type RegisterPayload = {
-  nom: string;
-  prenom: string;
   email: string;
   mot_de_passe: string;
-  role?: 'superadmin' | 'admin' | 'gerant' | 'vendeur'; // optionnel, vendeur par défaut
-  photo_url?: string;
+  role?: 'superadmin' | 'admin' | 'gerant' | 'vendeur';
 };
 
 export type StaffMember = {
   id: number;
-  nom: string;
-  prenom: string;
   email: string;
   role: string;
   photo_url?: string;
@@ -20,69 +14,51 @@ export type StaffMember = {
   magasin_nom?: string;
 };
 
-// Récupération de l'URL depuis les variables d'environnement Vite
 const API_URL: string = (import.meta as any).env.VITE_API_URL ?? 'https://gstock-backend.onrender.com';
 
 const apiClient = {
-  // ✅ Inscription
   register: async (userData: RegisterPayload) => {
     const response = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
     });
-
     const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "Erreur lors de l'inscription");
-    }
+    if (!response.ok) throw new Error(data.error || "Erreur lors de l'inscription");
     return data;
   },
 
-  // ✅ Connexion
   login: async (credentials: { email: string; mot_de_passe: string }) => {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-
     const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Identifiants incorrects');
-    }
+    if (!response.ok) throw new Error(data.error || 'Identifiants incorrects');
     return data;
   },
 
-  // ✅ Création superadmin (optionnel)
   createSuperadmin: async (payload: RegisterPayload & { secret: string }) => {
     const response = await fetch(`${API_URL}/api/auth/create-superadmin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-
     const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Erreur lors de la création du superadmin');
-    }
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de la création du superadmin');
     return data;
   },
 
-  // ✅ Suppression superadmin
   deleteSuperadmin: async (id: number) => {
     const response = await fetch(`${API_URL}/api/auth/delete-superadmin/${id}`, {
       method: 'DELETE',
     });
-
     const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Erreur lors de la suppression du superadmin');
-    }
+    if (!response.ok) throw new Error(data.error || 'Erreur lors de la suppression du superadmin');
     return data;
   },
 
-  // ✅ Staff management
   getStaff: async () => {
     const response = await fetch(`${API_URL}/api/staff`);
     if (!response.ok) throw new Error('Erreur lors du chargement du personnel');
@@ -119,7 +95,6 @@ const apiClient = {
     return await response.json();
   },
 
-  // ✅ Magasins
   getMagasins: async () => {
     const response = await fetch(`${API_URL}/api/magasins`);
     if (!response.ok) throw new Error('Erreur lors du chargement des magasins');
