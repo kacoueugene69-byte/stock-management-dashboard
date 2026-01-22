@@ -5,6 +5,29 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0"
-  }
+    "bcrypt": "^6.0.0",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^17.2.3",
+    "pg": "^8.17.2",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7"
+  },
+  "name": "stock-management-dashboard",
+  "version": "1.0.0",
+  "description": "Système de gestion de stock CDCOM-FACI avec authentification et dashboard",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kacoueugene69-byte/stock-management-dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kacoueugene69-byte/stock-management-dashboard/issues"
+  },
+  "homepage": "https://github.com/kacoueugene69-byte/stock-management-dashboard#readme"
 }

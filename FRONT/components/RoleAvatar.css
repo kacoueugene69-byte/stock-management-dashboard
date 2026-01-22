@@ -1,0 +1,16 @@
+/* src/components/RoleAvatar.css */
+.role-avatar {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  border-radius:50%;
+  font-weight:700;
+  text-transform:uppercase;
+}
+.ra-super { background: linear-gradient(135deg,#ff7a18,#af002d); }
+.ra-admin { background: linear-gradient(135deg,#2b8cff,#0057d9); }
+.ra-vendeur { background: linear-gradient(135deg,#00b894,#009f6b); }
+.ra-manager { background: linear-gradient(135deg,#f6d365,#fda085); }
+.ra-guest { background: #6c757d; }
+.ra-default { background: #343a40; }

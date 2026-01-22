@@ -48,16 +48,32 @@ const apiClient = {
     return data;
   },
 
-  login: async (credentials: { email: string; mot_de_passe: string }) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Identifiants incorrects');
-    return data;
-  },
+   login: async (credentials: { email: string; mot_de_passe: string }) => {
+  const response = await fetch(`${API_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      email: credentials.email?.trim().toLowerCase(), // ✅ ligne 52 corrigée
+      mot_de_passe: credentials.mot_de_passe?.trim()
+    }),
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('Réponse invalide du serveur');
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.error || data?.message || 'Identifiants incorrects');
+  }
+
+  return data;
+},
+
 
   getUsers: async (filters?: { role?: string }) => {
     const params = filters?.role ? `?role=${encodeURIComponent(filters.role)}` : '';

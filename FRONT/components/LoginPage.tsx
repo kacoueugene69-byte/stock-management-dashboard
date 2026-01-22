@@ -1,4 +1,3 @@
-// components/LoginPage.tsx
 import React, { useState } from 'react';
 import Logo from './Logo';
 import apiClient from '../services/api';
@@ -19,8 +18,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
     e.preventDefault();
     setError(null);
 
-    if (!email.trim() || !motDePasse) {
-      setError("Veuillez remplir tous les champs");
+    const emailClean = email.trim().toLowerCase();
+    const motDePasseClean = motDePasse.trim();
+
+    if (!emailClean || !motDePasseClean) {
+      setError("Email et mot de passe obligatoires.");
       return;
     }
 
@@ -28,22 +30,30 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
 
     try {
       const response = await apiClient.login({
-        email: email.trim().toLowerCase(),
-        mot_de_passe: motDePasse
+        email: emailClean,
+        mot_de_passe: motDePasseClean
       });
 
-      const user = response.user || response;
-
+      // ✅ Stocker le token si présent
       const storage = remember ? localStorage : sessionStorage;
+      if (response.token) {
+        storage.setItem('auth_token', response.token);
+      }
+
+      const user = response.user || response;
       storage.setItem('user', JSON.stringify(user));
       storage.setItem('isAuthenticated', 'true');
 
       onLogin(user);
     } catch (err: any) {
-      if (err.message && err.message.toLowerCase().includes('incorrect')) {
-        setError("Email ou mot de passe incorrect");
+      console.error('Login error:', err);
+      const msg = err?.message?.toLowerCase() ?? '';
+      if (msg.includes('incorrect')) {
+        setError("Email ou mot de passe incorrect.");
+      } else if (msg.includes('désactivé')) {
+        setError("Compte désactivé. Contactez l'administrateur.");
       } else {
-        setError(err.message || "Erreur lors de la connexion");
+        setError(err.message || "Erreur lors de la connexion.");
       }
     } finally {
       setLoading(false);
