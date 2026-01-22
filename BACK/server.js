@@ -16,7 +16,6 @@ app.use(express.json());
 // Import routes
 const authRoutes = require('./routes/auth');
 const utilisateursRoutes = require('./routes/utilisateurs');
-// autres routes...
 const articlesRoutes = require('./routes/articles');
 const clientsRoutes = require('./routes/clients');
 const personnelsRoutes = require('./routes/personnels');
@@ -46,12 +45,11 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-  // Attention : alter:true modifie la structure de la table pour correspondre au modèle.
-  // Utilise en dev ou si tu veux synchroniser automatiquement.
   try {
-    await sequelize.sync({ alter: true });
-    console.log('✅ Models synchronisés avec la base (alter: true)');
+    // ⚠️ En production, on ne modifie pas la structure des tables
+    await sequelize.authenticate();
+    console.log('✅ Connexion à la base réussie');
   } catch (err) {
-    console.error('❌ Erreur lors de la synchronisation Sequelize:', err);
+    console.error('❌ Erreur de connexion Sequelize:', err);
   }
 });

@@ -13,7 +13,7 @@ const Utilisateur = sequelize.define('Utilisateur', {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('superadmin', 'admin', 'gerant', 'vendeur'),
+    type: DataTypes.STRING(30),   // ✅ STRING au lieu de ENUM
     allowNull: false,
     defaultValue: 'vendeur'
   },
@@ -22,10 +22,7 @@ const Utilisateur = sequelize.define('Utilisateur', {
     allowNull: false,
     defaultValue: 'actif'
   },
-  derniere_connexion: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
+  
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,

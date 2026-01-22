@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';

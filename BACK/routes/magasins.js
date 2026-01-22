@@ -15,7 +15,18 @@ router.get('/', async (req, res) => {
 // POST créer un magasin
 router.post('/', async (req, res) => {
   try {
-    const magasin = await Magasin.create(req.body);
+    const { nom, adresse, statut } = req.body;
+
+    if (!nom) {
+      return res.status(400).json({ error: "Le nom du magasin est obligatoire" });
+    }
+
+    const magasin = await Magasin.create({
+      nom,
+      adresse,
+      statut: statut || 'actif'
+    });
+
     res.status(201).json(magasin);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -27,6 +38,7 @@ router.put('/:id', async (req, res) => {
   try {
     const magasin = await Magasin.findByPk(req.params.id);
     if (!magasin) return res.status(404).json({ error: "Magasin non trouvé" });
+
     await magasin.update(req.body);
     res.json(magasin);
   } catch (err) {
@@ -39,6 +51,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const magasin = await Magasin.findByPk(req.params.id);
     if (!magasin) return res.status(404).json({ error: "Magasin non trouvé" });
+
     await magasin.destroy();
     res.json({ message: "Magasin supprimé avec succès" });
   } catch (err) {

@@ -1,7 +1,7 @@
 // routes/auth.js
-const express = require('express');
-const router = express.Router();
-const { Utilisateur } = require('../models'); // assure-toi que models/index.js exporte Utilisateur
+const express = require('express'); 
+const router = express.Router(); 
+const { Utilisateur } = require('../models');
 
 // Inscription (email + mot_de_passe uniquement)
 router.post('/register', async (req, res) => {
@@ -55,30 +55,27 @@ router.post('/login', async (req, res) => {
 });
 
 // Création du superadmin (protéger avec SUPERADMIN_SECRET dans .env)
+// ✅ Créer un superadmin
+
 router.post('/create-superadmin', async (req, res) => {
   try {
     const { email, mot_de_passe, secret } = req.body;
-
     if (secret !== process.env.SUPERADMIN_SECRET) {
       return res.status(403).json({ error: "Accès interdit" });
     }
-
     if (!email || !mot_de_passe) {
       return res.status(400).json({ error: "Email et mot de passe obligatoires." });
     }
-
     const existing = await Utilisateur.findOne({ where: { email } });
     if (existing) {
       return res.status(400).json({ error: "Cet email est déjà utilisé." });
     }
-
     const user = await Utilisateur.create({
       email: email.trim().toLowerCase(),
       mot_de_passe,
       role: 'superadmin',
       statut: 'actif'
     });
-
     return res.status(201).json({ user });
   } catch (err) {
     return res.status(500).json({ error: err.message });
