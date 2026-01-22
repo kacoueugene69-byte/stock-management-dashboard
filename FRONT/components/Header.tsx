@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MenuIcon, ChevronDownIcon, SearchIcon, BellIcon } from './icons';
+import { MenuIcon, ChevronDownIcon, SearchIcon, BellIcon, ArrowLeftIcon } from './icons';
 import { type Notification } from './DashboardPage';
 
 interface User {
@@ -18,9 +18,10 @@ interface HeaderProps {
     notifications: Notification[];
     onNotificationClick: (id: number) => void;
     onMarkAllAsRead: () => void;
+    onGoBack?: () => void; // Nouveau prop pour le bouton retour
 }
 
-const Header: React.FC<HeaderProps> = ({ pageTitle, user, onLogout, onToggleSidebar, isSidebarCollapsed, notifications, onNotificationClick, onMarkAllAsRead }) => {
+const Header: React.FC<HeaderProps> = ({ pageTitle, user, onLogout, onToggleSidebar, isSidebarCollapsed, notifications, onNotificationClick, onMarkAllAsRead, onGoBack }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +54,11 @@ const Header: React.FC<HeaderProps> = ({ pageTitle, user, onLogout, onToggleSide
         <button onClick={onToggleSidebar} className="p-2 -ml-2 text-gray-600 rounded-full hover:bg-gray-100 focus:outline-none focus:ring">
           <MenuIcon className="w-6 h-6" />
         </button>
+        {onGoBack && (
+          <button onClick={onGoBack} className="p-2 ml-2 text-gray-600 rounded-full hover:bg-gray-100 focus:outline-none focus:ring">
+            <ArrowLeftIcon className="w-6 h-6" />
+          </button>
+        )}
         <h1 className="ml-2 text-lg font-semibold text-gray-800">{pageTitle === 'Dashboard' ? 'Tableau de bord' : pageTitle}</h1>
       </div>
       <div className="flex items-center space-x-4">

@@ -1,4 +1,6 @@
 // server.js
+
+console.log('SUPERADMIN_SECRET=', process.env.SUPERADMIN_SECRET);
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
