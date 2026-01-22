@@ -3,14 +3,65 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('./database');
 
 const Article = sequelize.define('Article', {
-  code_article: { type: DataTypes.STRING, unique: true, allowNull: false },
-  nom_article: { type: DataTypes.STRING, allowNull: false },
-  prix_achat: { type: DataTypes.DECIMAL, defaultValue: 0 },
-  prix_vente: { type: DataTypes.DECIMAL, allowNull: false },
-  quantite_stock: { type: DataTypes.INTEGER, defaultValue: 0 },
-  statut: { type: DataTypes.STRING, defaultValue: 'actif' },
-  seuil_alerte: { type: DataTypes.INTEGER, defaultValue: 5 },
-  description: DataTypes.TEXT
-}, { tableName: 'articles', timestamps: false });
+  identifiant: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'identifiant'
+  },
+  article_code: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false,
+    field: 'article_code'
+  },
+  nom_article: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'nom_article'
+  },
+  prix_achat: {
+    type: DataTypes.DECIMAL,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'prix_achat'
+  },
+  prix_vente: {
+    type: DataTypes.DECIMAL,
+    allowNull: false,
+    field: 'prix_vente'
+  },
+  quantite_stock: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'quantite_stock'
+  },
+  seuil_alerte: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 5,
+    field: 'seuil_alerte'
+  },
+  id_categorie: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'id_categorie'
+  },
+  statut: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'actif',
+    field: 'statut'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'description'
+  }
+}, {
+  tableName: 'articles',
+  timestamps: false
+});
 
 module.exports = Article;
