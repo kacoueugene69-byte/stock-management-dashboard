@@ -20,9 +20,10 @@ import LoadingSpinner from './LoadingSpinner';
 import InvoicePage from './InvoicePage';
 import ConfirmationModal from './ConfirmationModal';
 import { DeconnexionIcon, VentesIcon, FactureIcon, CommandesIcon, DatabaseIcon } from './icons';
-import apiClient from '../services/api';
+import { ApiService } from '../services/api';
 
 interface DashboardPageProps {
+  user: any;
   onLogout: () => void;
 }
 
@@ -37,7 +38,7 @@ export type Notification = {
 const formatCurrency = (amount?: number | null) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('fr-FR');
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) => {
   const [activePage, setActivePage] = useState('Dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -53,9 +54,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   });
 
   const currentUser = {
-    name: 'Super Admin',
-    role: 'Superadministrateur',
-    photoUrl: '/api/placeholder/40/40'
+    name: user?.email?.split('@')[0] || 'Utilisateur',
+    role: user?.role || 'Utilisateur',
+    photoUrl: user?.photo_url || '/api/placeholder/40/40'
   };
 
   useEffect(() => {
@@ -66,20 +67,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         let fetchedStats: any = null;
         let movements: any = null;
 
-        if (apiClient && typeof apiClient.getStats === 'function') {
+        if (ApiService && typeof ApiService.getStats === 'function') {
           try {
-            fetchedStats = await apiClient.getStats();
+            fetchedStats = await ApiService.getStats();
           } catch (err) {
-            console.warn('apiClient.getStats failed:', err);
+            console.warn('ApiService.getStats failed:', err);
             fetchedStats = null;
           }
         }
 
-        if (apiClient && typeof apiClient.getArticleMovements === 'function') {
+        if (ApiService && typeof ApiService.getArticleMovements === 'function') {
           try {
-            movements = await apiClient.getArticleMovements();
+            movements = await ApiService.getArticleMovements();
           } catch (err) {
-            console.warn('apiClient.getArticleMovements failed:', err);
+            console.warn('ApiService.getArticleMovements failed:', err);
             movements = null;
           }
         }

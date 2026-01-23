@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Logo from './Logo';
-import apiClient from '../services/api';
+import { ApiService } from '../services/api';
 
 interface RegistrationPageProps {
   onRegister: () => void;
@@ -62,7 +62,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, onSwitc
 
       // apiClient.register doit envoyer mot_de_passe en clair au backend
       // Le backend doit hacher le mot de passe avec bcrypt avant de le stocker.
-      await apiClient.register(payload);
+      await ApiService.register(payload);
 
       setSuccess(true);
       onRegister();

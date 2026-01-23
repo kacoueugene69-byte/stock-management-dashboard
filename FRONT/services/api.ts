@@ -38,223 +38,141 @@ export type ArticleMovements = {
   out: number;
 };
 
-const API_URL: string = (import.meta as any).env?.VITE_API_URL?.trim() || 'https://gstock-backend.onrender.com';
+const API_URL = (import.meta as any).env?.VITE_API_URL?.trim() || 'https://gstock-backend.onrender.com';
 
-// Utilitaire pour récupérer un token si présent
-const getToken = () =>
-  localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+// Debug pour vérifier l'URL utilisée
+console.log('🔗 API_URL utilisée:', API_URL);
 
-const jsonHeaders = () => {
-  const token = getToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
-};
-
-const apiClient = {
-  // --- AUTH ---
-  register: async (userData: RegisterPayload) => {
-    const payload = {
-      email: userData.email.trim().toLowerCase(),
-      mot_de_passe: userData.mot_de_passe.trim(),
-      ...(userData.role ? { role: userData.role } : {})
-    };
-
-    const response = await fetch(`${API_URL}/api/auth/register`, {
+export const ApiService = {
+  login: async (payload: { email: string; mot_de_passe: string }) => {
+    const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
-      headers: jsonHeaders(),
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload)
     });
 
-    let data: any;
-    try {
-      data = await response.json();
-    } catch {
-      throw new Error("Réponse invalide du serveur");
-    }
-
     if (!response.ok) {
-      throw new Error(data?.error || "Erreur lors de l'inscription");
-    }
-    return data; // { message, user }
-  },
-
-  login: async (credentials: { email: string; mot_de_passe: string }) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: jsonHeaders(),
-      body: JSON.stringify({
-        email: credentials.email?.trim().toLowerCase(),
-        mot_de_passe: credentials.mot_de_passe?.trim()
-      })
-    });
-
-    let data: any;
-    try {
-      data = await response.json();
-    } catch {
-      throw new Error('Réponse invalide du serveur');
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur serveur');
     }
 
-    if (!response.ok) {
-      throw new Error(data?.error || data?.message || 'Identifiants incorrects');
-    }
-
-    return data; // { message, user, token? }
-  },
-
-  // --- SUPERADMINS (si tu gardes ces endpoints) ---
-  
-  createSuperadmin: async (payload: RegisterPayload & { secret: string }) => {
-    const response = await fetch(`${API_URL}/api/auth/create-superadmin`, {
-      method: 'POST',
-      headers: jsonHeaders(),
-      body: JSON.stringify({
-        email: payload.email.trim().toLowerCase(),
-        mot_de_passe: payload.mot_de_passe.trim(),
-        role: payload.role || 'superadmin',
-        secret: payload.secret
-      })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la création du superadmin');
-    return data;
-  },
-
-  deleteSuperadmin: async (id: number) => {
-    const response = await fetch(`${API_URL}/api/auth/delete-superadmin/${id}`, {
-      method: 'DELETE',
-      headers: jsonHeaders()
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la suppression du superadmin');
-    return data;
-  },
-
-  getSuperadmins: async () => {
-    const response = await fetch(`${API_URL}/api/auth/superadmins`, {
-      headers: jsonHeaders()
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur chargement superadmins');
-    return data;
-  },
-
-  // --- PERSONNELS ---
-  getStaff: async (): Promise<StaffMember[]> => {
-    const response = await fetch(`${API_URL}/api/staff`, { headers: jsonHeaders() });
-    if (!response.ok) throw new Error('Erreur lors du chargement du personnel');
     return await response.json();
   },
 
-  createStaff: async (staffData: Partial<StaffMember>) => {
-    const response = await fetch(`${API_URL}/api/staff`, {
+  register: async (payload: { email: string; mot_de_passe: string }) => {
+    const response = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
-      headers: jsonHeaders(),
-      body: JSON.stringify(staffData)
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la création');
-    return data;
-  },
 
-  updateStaff: async (id: number, staffData: Partial<StaffMember>) => {
-    const response = await fetch(`${API_URL}/api/staff/${id}`, {
-      method: 'PUT',
-      headers: jsonHeaders(),
-      body: JSON.stringify(staffData)
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la modification');
-    return data;
-  },
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur serveur');
+    }
 
-  deleteStaff: async (id: number) => {
-    const response = await fetch(`${API_URL}/api/staff/${id}`, {
-      method: 'DELETE',
-      headers: jsonHeaders()
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la suppression');
-    return data;
+    return await response.json();
   },
 
   // --- UTILISATEURS ---
-  createUser: async (userData: { email: string; mot_de_passe: string; role?: UserRole; statut?: 'actif' | 'inactif' }) => {
-    const payload = {
-      email: userData.email.trim().toLowerCase(),
-      mot_de_passe: userData.mot_de_passe.trim(),
-      ...(userData.role ? { role: userData.role } : {}),
-      ...(userData.statut ? { statut: userData.statut } : {})
-    };
-
+  getUsers: async () => {
     const response = await fetch(`${API_URL}/api/users`, {
-      method: 'POST',
-      headers: jsonHeaders(),
-      body: JSON.stringify(payload)
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la création');
-    return data;
-  },
 
-  getUsers: async (filters?: { role?: UserRole }) => {
-    const params = filters?.role ? `?role=${encodeURIComponent(filters.role)}` : '';
-    const response = await fetch(`${API_URL}/api/users${params}`, { headers: jsonHeaders() });
-    if (!response.ok) throw new Error('Erreur lors du chargement des utilisateurs');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur lors du chargement des utilisateurs');
+    }
+
     return await response.json();
   },
 
-  updateUser: async (id: number, userData: Partial<{ email: string; mot_de_passe: string; role: UserRole; statut: 'actif' | 'inactif' }>) => {
-    const payload = {
-      ...(userData.email ? { email: userData.email.trim().toLowerCase() } : {}),
-      ...(userData.mot_de_passe ? { mot_de_passe: userData.mot_de_passe.trim() } : {}),
-      ...(userData.role ? { role: userData.role } : {}),
-      ...(userData.statut ? { statut: userData.statut } : {})
-    };
+  createUser: async (userData: { email: string; mot_de_passe: string; role?: string; statut?: string }) => {
+    const response = await fetch(`${API_URL}/api/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    });
 
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur lors de la création de l\'utilisateur');
+    }
+
+    return await response.json();
+  },
+
+  updateUser: async (id: number, userData: { email?: string; mot_de_passe?: string; role?: string; statut?: string }) => {
     const response = await fetch(`${API_URL}/api/users/${id}`, {
       method: 'PUT',
-      headers: jsonHeaders(),
-      body: JSON.stringify(payload)
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la modification');
-    return data;
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur lors de la modification de l\'utilisateur');
+    }
+
+    return await response.json();
   },
 
   deleteUser: async (id: number) => {
     const response = await fetch(`${API_URL}/api/users/${id}`, {
       method: 'DELETE',
-      headers: jsonHeaders()
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error || 'Erreur lors de la suppression');
-    return data;
-  },
 
-  // --- MAGASINS ---
-  getMagasins: async () => {
-    const response = await fetch(`${API_URL}/api/magasins`, { headers: jsonHeaders() });
-    if (!response.ok) throw new Error('Erreur lors du chargement des magasins');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur lors de la suppression de l\'utilisateur');
+    }
+
     return await response.json();
   },
 
-  // --- DASHBOARD ---
-  getStats: async (): Promise<DashboardStats> => {
-    const response = await fetch(`${API_URL}/api/stats`, { headers: jsonHeaders() });
-    if (!response.ok) throw new Error('Erreur lors du chargement des statistiques');
+  getStats: async () => {
+    const response = await fetch(`${API_URL}/api/stats`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur lors du chargement des statistiques');
+    }
+
     return await response.json();
   },
 
-  getArticleMovements: async (): Promise<ArticleMovements> => {
-    const response = await fetch(`${API_URL}/api/article-movements`, { headers: jsonHeaders() });
-    if (!response.ok) throw new Error("Erreur lors du chargement des mouvements d'articles");
+  getArticleMovements: async () => {
+    const response = await fetch(`${API_URL}/api/article-movements`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error || 'Erreur lors du chargement des mouvements d\'articles');
+    }
+
     return await response.json();
   }
 };
 
-export const ApiService = apiClient;
-export default apiClient;
+export default ApiService;

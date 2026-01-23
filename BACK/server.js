@@ -16,7 +16,7 @@ app.use(cors({
 app.use(express.json());
 
 // ✅ Import des routes
-const authRoutes = require('./routes/auth'); app.use('/api/auth', authRoutes);
+const authRoutes = require('./routes/auth'); 
 const utilisateursRoutes = require('./routes/utilisateurs');
 const articlesRoutes = require('./routes/articles');
 const clientsRoutes = require('./routes/clients');
@@ -29,6 +29,7 @@ const categoriesRoutes = require('./routes/categories');
 const mouvementsStockRoutes = require('./routes/mouvementsStock');
 
 // ✅ Montage des routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', utilisateursRoutes);
 app.use('/api/articles', articlesRoutes);
 app.use('/api/clients', clientsRoutes);

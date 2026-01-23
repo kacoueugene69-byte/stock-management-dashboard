@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Logo from './Logo';
-import apiClient from '../services/api';
+import { ApiService } from '../services/api';
 
 interface LoginPageProps {
   onLogin: (user: any) => void;
@@ -30,7 +30,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
     setLoading(true);
 
     try {
-      const response = await apiClient.login({
+      const response = await ApiService.login({
         email: emailClean,
         mot_de_passe: motDePasseClean
       });
