@@ -39,8 +39,7 @@ export type ArticleMovements = {
 };
 
 const API_URL: string =
-  (import.meta as any).env?.VITE_API_URL?.trim() ||
-  'https://gstock-backend.onrender.com';
+  (import.meta as any).env?.VITE_API_URL?.trim() || 'https://gstock-backend.onrender.com';
 
 // Utilitaire pour récupérer un token si présent
 const getToken = () =>

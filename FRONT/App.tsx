@@ -14,7 +14,6 @@ interface User {
   email: string;
   role: string;
   statut?: string;
-  derniere_connexion?: string | null;
   created_at?: string | null;
 }
 
