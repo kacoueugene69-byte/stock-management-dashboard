@@ -13,6 +13,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false); // ✅ nouvel état
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +35,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
         mot_de_passe: motDePasseClean
       });
 
-      // ✅ Stocker le token si présent
       const storage = remember ? localStorage : sessionStorage;
       if (response.token) {
         storage.setItem('auth_token', response.token);
@@ -89,17 +89,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'} // ✅ bascule texte/masqué
               required
-              className="w-full px-3 py-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 pr-10"
               placeholder="••••••••"
               value={motDePasse}
               onChange={(e) => setMotDePasse(e.target.value)}
               disabled={loading}
             />
+            {/* ✅ Bouton icône */}
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
+              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
           </div>
 
           <div className="flex items-center justify-between text-sm">

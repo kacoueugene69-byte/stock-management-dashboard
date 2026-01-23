@@ -1,21 +1,23 @@
 // server.js
 
-console.log('SUPERADMIN_SECRET=', process.env.SUPERADMIN_SECRET);
-require('dotenv').config();
+require('dotenv').config(); // ✅ Charger les variables d'environnement en premier
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models'); // index.js qui exporte sequelize et modèles
 
 const app = express();
 
+// ✅ CORS : autoriser uniquement les origines nécessaires en production
 app.use(cors({
-  origin: '*',
+  origin: process.env.CORS_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
+
+// ✅ Parsing JSON
 app.use(express.json());
 
-// Import routes
+// ✅ Import des routes
 const authRoutes = require('./routes/auth');
 const utilisateursRoutes = require('./routes/utilisateurs');
 const articlesRoutes = require('./routes/articles');
@@ -28,6 +30,7 @@ const magasinsRoutes = require('./routes/magasins');
 const categoriesRoutes = require('./routes/categories');
 const mouvementsStockRoutes = require('./routes/mouvementsStock');
 
+// ✅ Montage des routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', utilisateursRoutes);
 app.use('/api/articles', articlesRoutes);
@@ -40,15 +43,20 @@ app.use('/api/magasins', magasinsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/mouvements-stock', mouvementsStockRoutes);
 
+// ✅ Route de santé
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'API GStock fonctionnelle', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'OK',
+    message: 'API GStock fonctionnelle',
+    timestamp: new Date().toISOString()
+  });
 });
 
+// ✅ Démarrage du serveur
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   try {
-    // ⚠️ En production, on ne modifie pas la structure des tables
     await sequelize.authenticate();
     console.log('✅ Connexion à la base réussie');
   } catch (err) {

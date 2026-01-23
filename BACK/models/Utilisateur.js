@@ -1,18 +1,12 @@
-// models/Utilisateur.js
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
-const sequelize = require('./database'); // ton instance sequelize
+const sequelize = require('./database');
 
 const Utilisateur = sequelize.define('Utilisateur', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
-  },
-  nom: {
-    type: DataTypes.STRING(150),
-    allowNull: false,
-    defaultValue: ''
   },
   email: {
     type: DataTypes.STRING(100),
@@ -26,7 +20,7 @@ const Utilisateur = sequelize.define('Utilisateur', {
   role: {
     type: DataTypes.STRING(30),
     allowNull: false,
-    defaultValue: 'vendeur' // valeurs possibles: superadmin, admin, vendeur, manager, guest
+    defaultValue: 'vendeur'
   },
   is_superadmin: {
     type: DataTypes.BOOLEAN,
@@ -66,7 +60,6 @@ const Utilisateur = sequelize.define('Utilisateur', {
   }
 });
 
-// Méthode d'instance pour vérifier le mot de passe
 Utilisateur.prototype.verifierMotDePasse = async function(motDePasseClair) {
   return await bcrypt.compare(motDePasseClair, this.mot_de_passe);
 };

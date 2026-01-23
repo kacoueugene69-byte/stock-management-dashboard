@@ -34,25 +34,22 @@ pool.connect((err, client, release) => {
 
 // --- INSCRIPTION ---
 app.post('/api/auth/register', async (req, res) => {
-  const { nom, prenom, email, mot_de_passe } = req.body;
+  const { email, mot_de_passe } = req.body;
 
   // Validation des champs
-  if (!nom || !prenom || !email || !mot_de_passe) {
-    return res.status(400).json({ 
-      error: "Tous les champs sont obligatoires",
-      details: { nom, prenom, email, mot_de_passe: !!mot_de_passe }
-    });
+  if (!email || !mot_de_passe) {
+    return res.status(400).json({ error: "Email et mot de passe obligatoires." });
   }
 
-  // Validation de l'email
+  const emailClean = email.trim().toLowerCase();
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: "Format d'email invalide" });
+  if (!emailRegex.test(emailClean)) {
+    return res.status(400).json({ error: "Format d'email invalide." });
   }
 
-  // Validation du mot de passe (minimum 8 caractères)
   if (mot_de_passe.length < 8) {
-    return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
+    return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères." });
   }
 
   const client = await pool.connect();
@@ -61,47 +58,39 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Vérifier si l'email existe déjà
     const emailCheck = await client.query(
-      'SELECT identifiant FROM utilisateurs WHERE LOWER(email) = LOWER($1)',
-      [email]
+      'SELECT id FROM utilisateurs WHERE LOWER(email) = LOWER($1)',
+      [emailClean]
     );
 
     if (emailCheck.rows.length > 0) {
       await client.query('ROLLBACK');
-      return res.status(409).json({ error: "Cet email est déjà utilisé" });
+      return res.status(409).json({ error: "Cet email est déjà utilisé." });
     }
 
-    // 1. Créer l'entrée dans la table personnel
-    const personnelRes = await client.query(
-      `INSERT INTO personnel (nom, prenom) 
-       VALUES ($1, $2) 
-       RETURNING identifiant`,
-      [nom.trim(), prenom.trim()]
-    );
-    const personnelId = personnelRes.rows[0].identifiant;
+    // Hachage du mot de passe
+    const bcrypt = require('bcrypt');
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
+    const hash = await bcrypt.hash(mot_de_passe, rounds);
 
-   // 2. Créer l'utilisateur lié (sans nom_utilisateur)
-const insertUser = `
-  INSERT INTO utilisateurs (email, mot_de_passe, id_personnel, role, statut) 
-  VALUES (LOWER($1), $2, $3, $4, 'actif') 
-  RETURNING identifiant, email, role
-`;
-const userRes = await client.query(insertUser, [
-  email, 
-  mot_de_passe, 
-  personnelId, 
-  'vendeur' // Rôle par défaut
-]);
+    // Insertion dans utilisateurs
+    const insertUser = `
+      INSERT INTO utilisateurs (email, mot_de_passe, role, statut, created_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      RETURNING id, email, role, statut, created_at
+    `;
+    const userRes = await client.query(insertUser, [
+      emailClean,
+      hash,
+      'vendeur', // rôle par défaut
+      'actif'
+    ]);
 
     await client.query('COMMIT');
-    
-    const userData = {
-      ...userRes.rows[0],
-      nom,
-      prenom
-    };
+
+    const userData = userRes.rows[0];
 
     console.log('✅ Utilisateur créé:', userData.email);
-    
+
     res.status(201).json({
       message: "Compte créé avec succès",
       user: userData
@@ -110,22 +99,15 @@ const userRes = await client.query(insertUser, [
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Erreur lors de l\'inscription:', err);
-    
-    // Gestion des erreurs PostgreSQL spécifiques
-    if (err.code === '23505') { // Violation de contrainte unique
-      res.status(409).json({ error: "Cet email est déjà utilisé" });
-    } else if (err.code === '23503') { // Violation de clé étrangère
-      res.status(400).json({ error: "Erreur de référence dans la base de données" });
-    } else {
-      res.status(500).json({ 
-        error: "Erreur lors de la création du compte",
-        details: process.env.NODE_ENV === 'development' ? err.message : undefined
-      });
-    }
+    res.status(500).json({
+      error: "Erreur lors de la création du compte",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   } finally {
     client.release();
   }
 });
+
 
 // --- CONNEXION ---
 app.post('/api/auth/login', async (req, res) => {
@@ -139,23 +121,21 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
+    // Récupérer l'utilisateur par email
     const query = `
       SELECT 
-        u.identifiant,
-        u.email,
-        u.role,
-        u.statut,
-        u.id_personnel,
-        p.nom,
-        p.prenom
-      FROM utilisateurs u
-      LEFT JOIN personnel p ON p.identifiant = u.id_personnel
-      WHERE LOWER(u.email) = LOWER($1)
-        AND u.mot_de_passe = $2
+        id,
+        email,
+        mot_de_passe,
+        role,
+        statut,
+        created_at
+      FROM utilisateurs
+      WHERE LOWER(email) = LOWER($1)
       LIMIT 1
     `;
     
-    const result = await pool.query(query, [email.trim(), mot_de_passe]);
+    const result = await pool.query(query, [email.trim().toLowerCase()]);
 
     if (result.rows.length === 0) {
       console.log('❌ Tentative de connexion échouée pour:', email);
@@ -166,6 +146,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     const user = result.rows[0];
 
+    // Vérifier le mot de passe avec bcrypt
+    const bcrypt = require('bcrypt');
+    const isValid = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
+    if (!isValid) {
+      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+    }
+
     // Vérifier si le compte est actif
     if (user.statut !== 'actif') {
       return res.status(403).json({ 
@@ -175,8 +162,8 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Mettre à jour la dernière connexion
     await pool.query(
-      'UPDATE utilisateurs SET derniere_connexion = NOW() WHERE identifiant = $1',
-      [user.identifiant]
+      'UPDATE utilisateurs SET derniere_connexion = NOW() WHERE id = $1',
+      [user.id]
     );
 
     console.log('✅ Connexion réussie:', user.email);
@@ -184,12 +171,11 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({
       message: "Connexion réussie",
       user: {
-        identifiant: user.identifiant,
+        id: user.id,
         email: user.email,
         role: user.role,
-        nom: user.nom,
-        prenom: user.prenom,
-        statut: user.statut
+        statut: user.statut,
+        created_at: user.created_at
       }
     });
 
