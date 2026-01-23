@@ -1,8 +1,9 @@
 // server.js - Routes d'authentification corrigées
 
-const express = require('express');
-const { Pool } = require('pg');
-const cors = require('cors');
+import express from 'express';
+import { Pool } from 'pg';
+import cors from 'cors';
+import bcrypt from 'bcrypt';
 
 const app = express();
 
@@ -68,7 +69,6 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Hachage du mot de passe
-    const bcrypt = require('bcrypt');
     const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
     const hash = await bcrypt.hash(mot_de_passe, rounds);
 
@@ -147,7 +147,6 @@ app.post('/api/auth/login', async (req, res) => {
     const user = result.rows[0];
 
     // Vérifier le mot de passe avec bcrypt
-    const bcrypt = require('bcrypt');
     const isValid = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
     if (!isValid) {
       return res.status(401).json({ error: "Email ou mot de passe incorrect" });
@@ -365,4 +364,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
 
-module.exports = app;
+export default app;

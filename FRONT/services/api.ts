@@ -38,8 +38,7 @@ export type ArticleMovements = {
   out: number;
 };
 
-const API_URL: string =
-  (import.meta as any).env?.VITE_API_URL?.trim() || 'https://gstock-backend.onrender.com';
+const API_URL: string = (import.meta as any).env?.VITE_API_URL?.trim() || 'https://gstock-backend.onrender.com';
 
 // Utilitaire pour récupérer un token si présent
 const getToken = () =>
@@ -106,6 +105,7 @@ const apiClient = {
   },
 
   // --- SUPERADMINS (si tu gardes ces endpoints) ---
+  
   createSuperadmin: async (payload: RegisterPayload & { secret: string }) => {
     const response = await fetch(`${API_URL}/api/auth/create-superadmin`, {
       method: 'POST',

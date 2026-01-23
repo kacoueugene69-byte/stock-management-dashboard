@@ -4,8 +4,8 @@ const { Utilisateur } = require('../BACK/models');
 
 (async () => {
   try {
-    const email = 'admin@cdcom.com';
-    const password = 'MotDePasseSecurise123!';
+    const email = 'kouacou@cdcom.com';
+    const password = 'Kouassi@2000';
     const existing = await Utilisateur.findOne({ where: { email } });
     if (existing) {
       console.log('Utilisateur existe déjà');

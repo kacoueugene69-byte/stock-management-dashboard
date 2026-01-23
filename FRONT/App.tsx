@@ -9,12 +9,13 @@ import { ApiService } from './services/api';
 
 type View = 'login' | 'register' | 'dashboard';
 
+// ✅ Interface alignée avec la base
 interface User {
   id: number;
   email: string;
   role: string;
-  statut?: string;
-  created_at?: string | null;
+  statut: string;
+  created_at: string | null;
 }
 
 const AppContent: React.FC = () => {
@@ -23,27 +24,22 @@ const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { showNotification } = useNotification();
 
-  // Vérifier si l'utilisateur est déjà connecté au démarrage
+  // ✅ Vérifier si l'utilisateur est déjà connecté
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser) as User;
-        setCurrentUser(user);
-        setView('dashboard');
-      } catch {
-        localStorage.removeItem('user');
-      }
+      const user = JSON.parse(savedUser) as User;
+      setCurrentUser(user);
+      setView('dashboard');
     }
   }, []);
 
-  // Connexion réelle via API
+  // ✅ Connexion via API
   const handleLogin = async (credentials: { email: string; mot_de_passe: string }) => {
     setIsLoading(true);
     try {
       const data = await ApiService.login(credentials);
-      // L'API peut renvoyer { user } ou directement user
-      const user: User = (data && (data.user ?? data)) as User;
+      const user: User = data.user ?? data;
 
       setCurrentUser(user);
       localStorage.setItem('user', JSON.stringify(user));
@@ -57,7 +53,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Déconnexion
+  // ✅ Déconnexion
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('user');
@@ -66,42 +62,23 @@ const AppContent: React.FC = () => {
     showNotification('Déconnecté avec succès', 'success');
   };
 
-  // Inscription : RegistrationPage appelle déjà ApiService.register et ensuite onRegister()
+  // ✅ Inscription
   const handleRegister = async () => {
     showNotification('Inscription réussie ! Veuillez vous connecter.', 'success');
     setView('login');
   };
 
+  // ✅ Vue dynamique
   const renderView = () => {
     switch (view) {
       case 'login':
-        return (
-          <LoginPage
-            onLogin={handleLogin}
-            onSwitchToRegister={() => setView('register')}
-          />
-        );
+        return <LoginPage onLogin={handleLogin} onSwitchToRegister={() => setView('register')} />;
       case 'register':
-        return (
-          <RegistrationPage
-            onRegister={handleRegister}
-            onSwitchToLogin={() => setView('login')}
-          />
-        );
+        return <RegistrationPage onRegister={handleRegister} onSwitchToLogin={() => setView('login')} />;
       case 'dashboard':
-        return (
-          <DashboardPage
-            user={currentUser}
-            onLogout={handleLogout}
-          />
-        );
+        return <DashboardPage user={currentUser} onLogout={handleLogout} />;
       default:
-        return (
-          <LoginPage
-            onLogin={handleLogin}
-            onSwitchToRegister={() => setView('register')}
-          />
-        );
+        return <LoginPage onLogin={handleLogin} onSwitchToRegister={() => setView('register')} />;
     }
   };
 

@@ -1,5 +1,3 @@
-// server.js
-
 require('dotenv').config(); // ✅ Charger les variables d'environnement en premier
 const express = require('express');
 const cors = require('cors');
@@ -18,7 +16,7 @@ app.use(cors({
 app.use(express.json());
 
 // ✅ Import des routes
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth'); app.use('/api/auth', authRoutes);
 const utilisateursRoutes = require('./routes/utilisateurs');
 const articlesRoutes = require('./routes/articles');
 const clientsRoutes = require('./routes/clients');
@@ -31,7 +29,6 @@ const categoriesRoutes = require('./routes/categories');
 const mouvementsStockRoutes = require('./routes/mouvementsStock');
 
 // ✅ Montage des routes
-app.use('/api/auth', authRoutes);
 app.use('/api/users', utilisateursRoutes);
 app.use('/api/articles', articlesRoutes);
 app.use('/api/clients', clientsRoutes);
@@ -50,6 +47,16 @@ app.get('/api/health', (req, res) => {
     message: 'API GStock fonctionnelle',
     timestamp: new Date().toISOString()
   });
+});
+
+// ✅ Route racine pour Render
+app.get('/', (req, res) => {
+  res.send('✅ Backend opérationnel');
+});
+
+// ✅ Route de test
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'API fonctionnelle' });
 });
 
 // ✅ Démarrage du serveur

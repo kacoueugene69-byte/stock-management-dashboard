@@ -22,15 +22,6 @@ const Utilisateur = sequelize.define('Utilisateur', {
     allowNull: false,
     defaultValue: 'vendeur'
   },
-  is_superadmin: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: false
-  },
-  photo_url: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
   statut: {
     type: DataTypes.STRING(20),
     allowNull: false,
