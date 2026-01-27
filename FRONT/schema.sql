@@ -35,12 +35,10 @@ CREATE TABLE IF NOT EXISTS personnels (
 -- 3. Table des Utilisateurs (sans contrainte vers personnels)
 CREATE TABLE IF NOT EXISTS utilisateurs (
     id SERIAL PRIMARY KEY,
-    nom_utilisateur VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     mot_de_passe TEXT NOT NULL,
     role VARCHAR(30) NOT NULL CHECK (role IN ('superadmin', 'admin', 'gerant', 'vendeur')),
     statut VARCHAR(20) DEFAULT 'actif',
-    derniere_connexion TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

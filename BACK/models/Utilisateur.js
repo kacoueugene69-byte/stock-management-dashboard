@@ -1,3 +1,4 @@
+// models/Utilisateur.js
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
 const sequelize = require('./database');
@@ -11,7 +12,8 @@ const Utilisateur = sequelize.define('Utilisateur', {
   email: {
     type: DataTypes.STRING(100),
     unique: true,
-    allowNull: false
+    allowNull: false,
+    validate: { isEmail: true }
   },
   mot_de_passe: {
     type: DataTypes.TEXT,
@@ -20,37 +22,35 @@ const Utilisateur = sequelize.define('Utilisateur', {
   role: {
     type: DataTypes.STRING(30),
     allowNull: false,
-    defaultValue: 'vendeur'
+    defaultValue: 'vendeur',
+    validate: {
+      isIn: [['superadmin', 'admin', 'gerant', 'vendeur']]
+    }
   },
   statut: {
     type: DataTypes.STRING(20),
     allowNull: false,
-    defaultValue: 'actif'
+    defaultValue: 'actif',
+    validate: {
+      isIn: [['actif', 'inactif']]
+    }
   },
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW
+  },
+  derniere_connexion: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'utilisateurs',
   timestamps: false,
-  hooks: {
-    beforeCreate: async (utilisateur) => {
-      if (utilisateur.mot_de_passe) {
-        const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
-        utilisateur.mot_de_passe = await bcrypt.hash(utilisateur.mot_de_passe, rounds);
-      }
-    },
-    beforeUpdate: async (utilisateur) => {
-      if (utilisateur.changed && utilisateur.changed('mot_de_passe')) {
-        const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
-        utilisateur.mot_de_passe = await bcrypt.hash(utilisateur.mot_de_passe, rounds);
-      }
-    }
-  }
+  hooks: {}  // ⚠️ PAS DE HOOKS - hachage dans routes/auth.js
 });
 
+// Méthode pour vérifier le mot de passe
 Utilisateur.prototype.verifierMotDePasse = async function(motDePasseClair) {
   return await bcrypt.compare(motDePasseClair, this.mot_de_passe);
 };

@@ -4,7 +4,13 @@ import express from 'express';
 import { Pool } from 'pg';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
+const express = require('express');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const router = express.Router();
 const app = express();
 
 // Middleware
@@ -29,15 +35,15 @@ pool.connect((err, client, release) => {
   }
 });
 
+
 // ============================================
 // ROUTES D'AUTHENTIFICATION
 // ============================================
 
 // --- INSCRIPTION ---
-app.post('/api/auth/register', async (req, res) => {
+router.post('/register', async (req, res) => {
   const { email, mot_de_passe } = req.body;
 
-  // Validation des champs
   if (!email || !mot_de_passe) {
     return res.status(400).json({ error: "Email et mot de passe obligatoires." });
   }
@@ -57,7 +63,6 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Vérifier si l'email existe déjà
     const emailCheck = await client.query(
       'SELECT id FROM utilisateurs WHERE LOWER(email) = LOWER($1)',
       [emailClean]
@@ -68,11 +73,9 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(409).json({ error: "Cet email est déjà utilisé." });
     }
 
-    // Hachage du mot de passe
     const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
     const hash = await bcrypt.hash(mot_de_passe, rounds);
 
-    // Insertion dans utilisateurs
     const insertUser = `
       INSERT INTO utilisateurs (email, mot_de_passe, role, statut, created_at)
       VALUES ($1, $2, $3, $4, NOW())
@@ -81,15 +84,13 @@ app.post('/api/auth/register', async (req, res) => {
     const userRes = await client.query(insertUser, [
       emailClean,
       hash,
-      'vendeur', // rôle par défaut
+      'vendeur',
       'actif'
     ]);
 
     await client.query('COMMIT');
 
     const userData = userRes.rows[0];
-
-    console.log('✅ Utilisateur créé:', userData.email);
 
     res.status(201).json({
       message: "Compte créé avec succès",
@@ -98,94 +99,69 @@ app.post('/api/auth/register', async (req, res) => {
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Erreur lors de l\'inscription:', err);
-    res.status(500).json({
-      error: "Erreur lors de la création du compte",
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+    console.error('Erreur inscription:', err);
+    res.status(500).json({ error: "Erreur lors de la création du compte" });
   } finally {
     client.release();
   }
 });
 
 
-// --- CONNEXION ---
-app.post('/api/auth/login', async (req, res) => {
+// --- CONNEXION (email + mot_de_passe seulement) ---
+router.post('/login', async (req, res) => {
   const { email, mot_de_passe } = req.body;
 
-  // Validation des champs
   if (!email || !mot_de_passe) {
-    return res.status(400).json({ 
-      error: "Email et mot de passe requis" 
-    });
+    return res.status(400).json({ error: "Email et mot de passe requis" });
   }
 
   try {
     // Récupérer l'utilisateur par email
     const query = `
-      SELECT 
-        id,
-        email,
-        mot_de_passe,
-        role,
-        statut,
-        created_at
+      SELECT id, email, mot_de_passe
       FROM utilisateurs
       WHERE LOWER(email) = LOWER($1)
       LIMIT 1
     `;
-    
     const result = await pool.query(query, [email.trim().toLowerCase()]);
 
     if (result.rows.length === 0) {
-      console.log('❌ Tentative de connexion échouée pour:', email);
-      return res.status(401).json({ 
-        error: "Email ou mot de passe incorrect" 
-      });
+      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
     }
 
     const user = result.rows[0];
 
-    // Vérifier le mot de passe avec bcrypt
+    // Vérifier le mot de passe
     const isValid = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
     if (!isValid) {
       return res.status(401).json({ error: "Email ou mot de passe incorrect" });
     }
 
-    // Vérifier si le compte est actif
-    if (user.statut !== 'actif') {
-      return res.status(403).json({ 
-        error: "Votre compte est inactif. Contactez l'administrateur." 
-      });
-    }
-
-    // Mettre à jour la dernière connexion
-    await pool.query(
-      'UPDATE utilisateurs SET derniere_connexion = NOW() WHERE id = $1',
-      [user.id]
+    // Générer un token JWT
+    const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
+    const token = jwt.sign(
+      { sub: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '24h' }
     );
-
-    console.log('✅ Connexion réussie:', user.email);
 
     res.json({
       message: "Connexion réussie",
+      token,
       user: {
         id: user.id,
-        email: user.email,
-        role: user.role,
-        statut: user.statut,
-        created_at: user.created_at
+        email: user.email
       }
     });
 
   } catch (err) {
-    console.error('❌ Erreur lors de la connexion:', err);
-    res.status(500).json({ 
-      error: "Erreur serveur lors de la connexion",
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+    console.error('Erreur login:', err);
+    res.status(500).json({ error: "Erreur serveur lors de la connexion" });
   }
 });
+
+module.exports = router;
+
 
 // ============================================
 // ROUTES ARTICLES

@@ -1,3 +1,4 @@
+// ✅ LoginPage.tsx corrigé
 import React, { useState } from 'react';
 import Logo from './Logo';
 import { ApiService } from '../services/api';
@@ -13,7 +14,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false); // ✅ nouvel état
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +36,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
         mot_de_passe: motDePasseClean
       });
 
+      const user = response.user ?? response;
       const storage = remember ? localStorage : sessionStorage;
+
       if (response.token) {
         storage.setItem('auth_token', response.token);
       }
 
-      const user = response.user || response;
       storage.setItem('user', JSON.stringify(user));
       storage.setItem('isAuthenticated', 'true');
 
@@ -92,7 +94,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
             <input
-              type={showPassword ? 'text' : 'password'} // ✅ bascule texte/masqué
+              type={showPassword ? 'text' : 'password'}
               required
               className="w-full px-3 py-3 border rounded-md focus:ring-2 focus:ring-blue-500 pr-10"
               placeholder="••••••••"
@@ -100,7 +102,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
               onChange={(e) => setMotDePasse(e.target.value)}
               disabled={loading}
             />
-            {/* ✅ Bouton icône */}
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
@@ -137,7 +138,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Pas encore de compte ?{" "}
+            Pas encore de compte ?{' '}
             <button
               onClick={onSwitchToRegister}
               className="font-bold text-blue-600 hover:underline"

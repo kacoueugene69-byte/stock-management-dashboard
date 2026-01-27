@@ -1,41 +1,54 @@
+// routes/auth.js
 const express = require('express');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { Utilisateur } = require('../models');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
-// ✅ Route d'inscription
+// Helpers
+const normalizeEmail = (email) => email?.trim().toLowerCase();
+const normalizePassword = (pwd) => pwd?.trim();
+
+// --- INSCRIPTION ---
 router.post('/register', async (req, res) => {
   try {
-    const { email, mot_de_passe, role, statut } = req.body;
+    const { email, mot_de_passe } = req.body;
 
     if (!email || !mot_de_passe) {
-      return res.status(400).json({ error: "Email et mot de passe obligatoires." });
+      return res.status(400).json({ error: 'Email et mot de passe obligatoires.' });
     }
 
-    const existing = await Utilisateur.findOne({ where: { email: email.trim().toLowerCase() } });
+    if (mot_de_passe.length < 8) {
+      return res.status(400).json({ error: 'Mot de passe trop court (min 8 caractères).' });
+    }
+
+    const emailClean = normalizeEmail(email);
+    const pwdClean = normalizePassword(mot_de_passe);
+
+    const existing = await Utilisateur.findOne({ where: { email: emailClean } });
     if (existing) {
-      return res.status(400).json({ error: "Cet email est déjà utilisé." });
+      return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
     }
 
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
-    const hashed = await bcrypt.hash(mot_de_passe.trim(), rounds);
+    const hash = await bcrypt.hash(pwdClean, 12);
 
     const user = await Utilisateur.create({
-      email: email.trim().toLowerCase(),
-      mot_de_passe: hashed,
-      role: role || 'vendeur',
-      statut: statut || 'actif'
+      email: emailClean,
+      mot_de_passe: hash,
+      role: 'vendeur',
+      statut: 'actif'
     });
 
+    const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+
     res.status(201).json({
-      message: 'Utilisateur créé avec succès',
+      message: 'Inscription réussie',
+      token,
       user: {
         id: user.id,
-        email: user.email,
-        role: user.role,
-        statut: user.statut,
-        created_at: user.created_at
+        email: user.email
       }
     });
   } catch (err) {
@@ -44,45 +57,45 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ✅ Route de connexion
+// --- CONNEXION ---
 router.post('/login', async (req, res) => {
   try {
     const { email, mot_de_passe } = req.body;
 
     if (!email || !mot_de_passe) {
-      return res.status(400).json({ error: "Email et mot de passe obligatoires." });
+      return res.status(400).json({ error: 'Email et mot de passe obligatoires.' });
     }
 
-    const user = await Utilisateur.findOne({
-      where: { email: email.trim().toLowerCase() }
-    });
+    const emailClean = normalizeEmail(email);
+    const pwdClean = normalizePassword(mot_de_passe);
 
+    const user = await Utilisateur.findOne({ where: { email: emailClean } });
     if (!user) {
-      return res.status(401).json({ error: "Email ou mot de passe incorrect." });
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+    }
+
+    const ok = await bcrypt.compare(pwdClean, user.mot_de_passe);
+    if (!ok) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
 
     if (user.statut !== 'actif') {
-      return res.status(403).json({ error: "Compte désactivé. Contactez l'administrateur." });
+      return res.status(403).json({ error: 'Compte désactivé. Contactez l\'administrateur.' });
     }
 
-    const motDePasseValide = await bcrypt.compare(mot_de_passe.trim(), user.mot_de_passe);
-    if (!motDePasseValide) {
-      return res.status(401).json({ error: "Email ou mot de passe incorrect." });
-    }
+    const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
 
     res.json({
-      message: "Connexion réussie",
+      message: 'Connexion réussie',
+      token,
       user: {
         id: user.id,
-        email: user.email,
-        role: user.role,
-        statut: user.statut,
-        created_at: user.created_at
+        email: user.email
       }
     });
   } catch (err) {
     console.error('Erreur login:', err);
-    res.status(500).json({ error: "Erreur serveur: " + err.message });
+    res.status(500).json({ error: 'Erreur serveur lors de la connexion' });
   }
 });
 
