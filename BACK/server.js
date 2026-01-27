@@ -38,6 +38,7 @@ const facturesRoutes = require('./routes/factures');
 const magasinsRoutes = require('./routes/magasins');
 const categoriesRoutes = require('./routes/categories');
 const mouvementsStockRoutes = require('./routes/mouvementsStock');
+const meRoutes = require('./routes/me');
 
 // Montage des routes
 app.use('/api/auth', authLimiter, authRoutes);
@@ -51,6 +52,7 @@ app.use('/api/factures', facturesRoutes);
 app.use('/api/magasins', magasinsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/mouvements-stock', mouvementsStockRoutes);
+app.use('/api/me', meRoutes);
 
 // Route de santé
 app.get('/api/health', (req, res) => {
@@ -76,7 +78,7 @@ app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   try {
     await sequelize.authenticate();
-    console.log('✅ Connexion à Neon PostgreSQL réussie');
+    console.log('✅ Connexion à la base de données PostgreSQL réussie');
     
     // Synchroniser les modèles (en développement uniquement)
     if (process.env.NODE_ENV !== 'production') {

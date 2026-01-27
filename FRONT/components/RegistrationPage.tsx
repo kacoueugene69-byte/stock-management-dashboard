@@ -30,19 +30,25 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, onSwitc
     const password = formData.mot_de_passe;
     const confirm = formData.confirmPassword;
 
+    // Validation email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError("Format d'email invalide");
       return false;
     }
+
+    // Validation mot de passe (minimum 6 caractères)
     if (password.length < 6) {
       setError("Le mot de passe doit contenir au moins 6 caractères");
       return false;
     }
+
+    // Validation correspondance des mots de passe
     if (password !== confirm) {
       setError("Les mots de passe ne correspondent pas");
       return false;
     }
+
     return true;
   };
 

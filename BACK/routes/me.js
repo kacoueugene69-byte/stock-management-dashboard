@@ -1,27 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
-const { verifyToken } = require('../auth/middleware');
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const { verifyToken } = require('../middleware/auth');
+const { Utilisateur } = require('../models');
 
 router.get('/me', verifyToken, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      'SELECT id, email, role, statut, created_at FROM utilisateurs WHERE id = $1',
-      [req.userId]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'User not found' });
-    const u = rows[0];
+    const user = await Utilisateur.findByPk(req.userId, {
+      attributes: ['id', 'email', 'role', 'statut', 'created_at']
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+
     res.json({
-      id: u.id,
-      email: u.email,
-      role: u.role,
-      statut: u.statut,
-      createdAt: u.created_at
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      statut: user.statut,
+      createdAt: user.created_at
     });
   } catch (err) {
     console.error('GET /api/me error', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
