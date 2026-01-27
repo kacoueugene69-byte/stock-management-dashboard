@@ -1,7 +1,7 @@
 // ✅ LoginPage.tsx corrigé
 import React, { useState } from 'react';
 import Logo from './Logo';
-import { ApiService } from '../services/api';
+import { ApiService, setAuthToken } from '../services/api';
 
 interface LoginPageProps {
   onLogin: (user: any) => void;
@@ -39,7 +39,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
       const user = response.user ?? response;
       const storage = remember ? localStorage : sessionStorage;
 
+      // Stocker le token
       if (response.token) {
+        setAuthToken(response.token);
         storage.setItem('auth_token', response.token);
       }
 
@@ -61,6 +63,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
       setLoading(false);
     }
   };
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">

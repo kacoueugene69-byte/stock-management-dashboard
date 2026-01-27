@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Logo from './Logo';
-import { ApiService } from '../services/api';
+import { ApiService, setAuthToken } from '../services/api';
 
 interface RegistrationPageProps {
   onRegister: () => void;

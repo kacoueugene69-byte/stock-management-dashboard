@@ -1,81 +1,60 @@
-// routes/auth.js - VERSION CORRIGÉE
+// backend/routes/auth.js - VERSION CORRIGÉE
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Utilisateur } = require('../models');
+const Utilisateur = require('../models/Utilisateur');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
-
-// Helpers
-const normalizeEmail = (email) => email?.trim().toLowerCase();
-const normalizePassword = (pwd) => pwd?.trim();
+const JWT_SECRET = process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_securise';
 
 // --- INSCRIPTION ---
 router.post('/register', async (req, res) => {
   try {
-    const { email, mot_de_passe, role, statut } = req.body;
-
-    // ✅ Validation
+    const { email, mot_de_passe } = req.body;
+    
     if (!email || !mot_de_passe) {
       return res.status(400).json({ error: 'Email et mot de passe obligatoires.' });
     }
-
-    // ✅ CORRIGÉ : Validation cohérente minimum 6 caractères (comme frontend)
+    
     if (mot_de_passe.length < 6) {
-      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+      return res.status(400).json({ error: 'Mot de passe trop court (min 6 caractères).' });
     }
 
-    const emailClean = normalizeEmail(email);
-    const pwdClean = normalizePassword(mot_de_passe);
-
-    // Validation email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailClean)) {
-      return res.status(400).json({ error: "Format d'email invalide." });
-    }
-
-    // Vérifier si l'email existe déjà
-    const existing = await Utilisateur.findOne({ where: { email: emailClean } });
+    const existing = await Utilisateur.findOne({ 
+      where: { email: email.trim().toLowerCase() } 
+    });
+    
     if (existing) {
       return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
     }
 
-    // ✅ Hachage sécurisé avec 12 rounds
-    const hash = await bcrypt.hash(pwdClean, 12);
-
-    // ✅ Création avec hooks désactivés pour éviter double hachage
+    const hash = await bcrypt.hash(mot_de_passe.trim(), 12);
     const user = await Utilisateur.create({
-      email: emailClean,
+      email: email.trim().toLowerCase(),
       mot_de_passe: hash,
-      role: role || 'vendeur',
-      statut: statut || 'actif'
-    }, {
-      hooks: false // Désactiver les hooks Sequelize
+      role: 'vendeur',
+      statut: 'actif'
     });
 
-    // ✅ Génération du token
-    const token = jwt.sign(
-      { sub: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = jwt.sign({ 
+      sub: user.id, 
+      email: user.email 
+    }, JWT_SECRET, { expiresIn: '24h' });
 
-    // ✅ Réponse complète avec toutes les infos
-    res.status(201).json({
-      message: 'Inscription réussie',
-      token,
-      user: {
-        id: user.id,
+    res.status(201).json({ 
+      message: 'Inscription réussie', 
+      token, 
+      user: { 
+        id: user.id, 
         email: user.email,
         role: user.role,
         statut: user.statut,
         created_at: user.created_at
-      }
+      } 
     });
   } catch (err) {
     console.error('❌ Erreur inscription:', err);
-    res.status(500).json({ error: 'Erreur serveur lors de l\'inscription' });
+    res.status(500).json({ error: "Erreur serveur lors de l'inscription" });
   }
 });
 
@@ -83,70 +62,51 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, mot_de_passe } = req.body;
-
-    // ✅ Validation
+    
     if (!email || !mot_de_passe) {
       return res.status(400).json({ error: 'Email et mot de passe obligatoires.' });
     }
 
-    const emailClean = normalizeEmail(email);
-    const pwdClean = normalizePassword(mot_de_passe);
-
-    console.log('🔍 Tentative de connexion:', emailClean);
-
-    // ✅ Recherche de l'utilisateur
     const user = await Utilisateur.findOne({ 
-      where: { email: emailClean },
-      attributes: ['id', 'email', 'mot_de_passe', 'role', 'statut', 'created_at']
+      where: { email: email.trim().toLowerCase() } 
     });
-
-    if (!user) {
-      console.log('❌ Utilisateur non trouvé:', emailClean);
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
-    }
-
-    console.log('✅ Utilisateur trouvé:', user.id, user.email);
-    console.log('🔐 Hash stocké longueur:', user.mot_de_passe?.length);
-
-    // ✅ Vérification du mot de passe
-    const isPasswordValid = await bcrypt.compare(pwdClean, user.mot_de_passe);
     
-    console.log('🔑 Mot de passe valide:', isPasswordValid);
-
-    if (!isPasswordValid) {
-      console.log('❌ Mot de passe incorrect pour:', emailClean);
+    if (!user) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
 
-    // ✅ Vérification du statut
-    if (user.statut !== 'actif') {
-      console.log('⚠️ Compte désactivé:', emailClean);
-      return res.status(403).json({ error: 'Compte désactivé. Contactez l\'administrateur.' });
+    const ok = await bcrypt.compare(mot_de_passe.trim(), user.mot_de_passe);
+    
+    if (!ok) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
 
-    // ✅ Génération du token
-    const token = jwt.sign(
-      { sub: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    if (user.statut !== 'actif') {
+      return res.status(403).json({ error: 'Compte désactivé.' });
+    }
 
-    console.log('✅ Connexion réussie:', emailClean);
+    // Mettre à jour la dernière connexion
+    await user.update({ derniere_connexion: new Date() });
 
-    // ✅ Réponse complète
-    res.json({
-      message: 'Connexion réussie',
-      token,
-      user: {
-        id: user.id,
+    const token = jwt.sign({ 
+      sub: user.id, 
+      email: user.email 
+    }, JWT_SECRET, { expiresIn: '24h' });
+
+    res.json({ 
+      message: 'Connexion réussie', 
+      token, 
+      user: { 
+        id: user.id, 
         email: user.email,
         role: user.role,
         statut: user.statut,
-        created_at: user.created_at
-      }
+        created_at: user.created_at,
+        derniere_connexion: user.derniere_connexion
+      } 
     });
   } catch (err) {
-    console.error('❌ Erreur login:', err);
+    console.error('❌ Erreur connexion:', err);
     res.status(500).json({ error: 'Erreur serveur lors de la connexion' });
   }
 });

@@ -1,17 +1,13 @@
-// server.js - Routes d'authentification corrigées
-
+// server.js
 import express from 'express';
-import { Pool } from 'pg';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
+import jwt from 'jsonwebtoken';
+import pkg from 'pg';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const router = express.Router();
-const app = express();
+const { Pool } = pkg;
+
+
 
 // Middleware
 app.use(cors());
@@ -20,28 +16,25 @@ app.use(express.json());
 // Configuration PostgreSQL (Neon)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: { rejectUnauthorized: false }
 });
 
 // Test de connexion
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('Erreur de connexion à la base de données:', err.stack);
+    console.error('❌ Erreur de connexion à la base de données:', err.stack);
   } else {
     console.log('✅ Connecté à Neon PostgreSQL');
     release();
   }
 });
 
-
 // ============================================
 // ROUTES D'AUTHENTIFICATION
 // ============================================
 
 // --- INSCRIPTION ---
-router.post('/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { email, mot_de_passe } = req.body;
 
   if (!email || !mot_de_passe) {
@@ -73,8 +66,7 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: "Cet email est déjà utilisé." });
     }
 
-    const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
-    const hash = await bcrypt.hash(mot_de_passe, rounds);
+    const hash = await bcrypt.hash(mot_de_passe.trim(), 12);
 
     const insertUser = `
       INSERT INTO utilisateurs (email, mot_de_passe, role, statut, created_at)
@@ -106,9 +98,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
-// --- CONNEXION (email + mot_de_passe seulement) ---
-router.post('/login', async (req, res) => {
+// --- CONNEXION ---
+app.post('/api/auth/login', async (req, res) => {
   const { email, mot_de_passe } = req.body;
 
   if (!email || !mot_de_passe) {
@@ -116,7 +107,6 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // Récupérer l'utilisateur par email
     const query = `
       SELECT id, email, mot_de_passe
       FROM utilisateurs
@@ -131,13 +121,11 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Vérifier le mot de passe
-    const isValid = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
+    const isValid = await bcrypt.compare(mot_de_passe.trim(), user.mot_de_passe);
     if (!isValid) {
       return res.status(401).json({ error: "Email ou mot de passe incorrect" });
     }
 
-    // Générer un token JWT
     const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
     const token = jwt.sign(
       { sub: user.id, email: user.email },
@@ -159,8 +147,6 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: "Erreur serveur lors de la connexion" });
   }
 });
-
-module.exports = router;
 
 
 // ============================================
